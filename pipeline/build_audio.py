@@ -348,7 +348,7 @@ def main_v2(sc, public_dir, export_wav=None):
           "titleCard": sc.get("titleCard"), "ui": sc.get("ui", {}), "audioEvents": sorted(events, key=lambda e: e["start"]),
           "beats": beats}
     if "endCard" in sc: tl["endCard"] = sc["endCard"]
-    json.dump(tl, open(os.path.join(public_dir, "timeline.json"), "w"), indent=1, ensure_ascii=False)
+    json.dump(tl, open(os.path.join(public_dir, "timeline.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     print(f"total {total:.2f}s, {len(beats)} beats, voiceover={voiceover}, ambience={amb_src}")
     print(f"master: {out_lufs:.1f} LUFS, peak {peak:.1f} dBFS, limiter max reduction {gr:.1f} dB, stereo 48 kHz")
     for b in beats: print(f"  {b['start']:6.2f}-{b['end']:6.2f} {b['id']:12s}" + (f" vo {b['voDur']:.2f}s" if b['voDur'] else ""))

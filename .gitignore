@@ -7,3 +7,4 @@ __pycache__/
 voices/*.wav
 voices/*.mp3
 voices/*.pt
+public/timeline.json

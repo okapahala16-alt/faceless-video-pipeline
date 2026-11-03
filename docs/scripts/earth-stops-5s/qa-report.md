@@ -133,3 +133,21 @@ Frame re-check: `/tmp/claude-0/-home-user/70c5c89b-04e4-567a-aca3-c8e1c3d889da/s
 
 Status akhir Fase 1: **semua item LULUS, tidak ada GAGAL tersisa.** Catatan C1, C2, C5 dari review pertama tetap berlaku (tidak memblokir).
 Catatan baru (tidak memblokir): loudness kini -15,76 LUFS, dekat batas bawah -16. Kalau ada perubahan mix lagi, sound-designer perlu menjaga agar tidak turun di bawah -16.
+
+## Fase 2 (review 2026-11-03 ±15:30)
+
+Build yang dinilai: `public/timeline.json` (15:21) + `public/audio/mix.wav` (md5 `260c694d8daf092f7fce64676bf6415e`).
+Stills (guides): `out/stills_p2/element-{0640,0690,0840,0960,1110,1230,2042,2100,2250,2282,2300}.png`. Tidak ada render/build ulang (mode hemat).
+Keputusan user yang dipakai sebagai acuan: EAST konstan (-0,6,0,-0,8); front kejut dilihat dari profil, sedikit dari darat, **laut di latar**;
+skala laut = trik kamera + kabut + bidang dasar laut; shore = peta diagram.
+
+| Item | Hasil | Bukti | Saran → subagent |
+|---|---|---|---|
+| shockFronts (wall/record) | **GAGAL (sedang)** | 0640/0690/0840: cangkang putih ada di muka barat (sisi kamera) + streak + serpihan, profil gedung terbaca. Tapi **laut tidak terlihat**: 0 % piksel biru di area aman (latar = dasar laut slate + kabut; tepi air ±450-800 m, FOG avenida far 760 m). Streak hanya muncul di sisi/lee gedung (`ShockFronts` mulai di flank), tidak ada aliran yang datang dan membelok di muka angin, jadi "udara menabrak" lemah; separuh bawah gedung blow-out putih (additive + kabut) | scene-builder: FOG avenida far ≥1500-2000 atau arahkan kamera sampai tepi air masuk sepertiga atas; tambah streak yang datang dari barat dan melengkung di depan cangkang (stagnasi); kurangi opacity shell di bawah ±30 % tinggi gedung |
+| seaWithdraws (sea/meters) | **GAGAL (sedang)** | 0960/1110: air hanya di baris y 169-397 = **tepat di belakang blok HUD** (0:03.000); pantai/calçadão hanya di y >1520 = **zona UI bawah**; ±1100 px tengah = dasar laut abu rata. Tepi air 32,0→37,0 hanya bergeser ±20 px (kamera ikut naik). Hubungan pantai↔air tidak terbaca di HP. Piringan matahari menabrak counter DRIFT EAST (0960 di atas card, 1110 di belakang angka) | scene-builder: turunkan pitch/ketinggian sehingga garis pantai lama di y ±1250-1450 dan tepi air di y ±550-750; jangan naikkan kamera searah tarikan air; pindahkan/sembunyikan matahari dari area card |
+| map_top_down (shore) | **GAGAL** | 1230: label **"1,090 M EAST" vs counter "DRIFT EAST 1,188 M"** di frame yang sama (selisih 98 m). Sumber: peta = `driftAt×0,985` (ramp 4 dtk + WATER_K), counter = interpolasi 1106→1267 ber-ease. Label "1,090 M EAST" memotong garis putus-putus dan garis tepi air; "WATER'S" menimpa garis tepi; bingkai peta (top 575) tertimpa border bawah counter card (y 580-581). Catatan: baris kotak kota sejajar garis putus-putus terbaca seperti garis putus kedua | scene-builder: satu fungsi jarak untuk counter + label (counter dan 3D juga beda: 32,0 counter 867 vs driftAt 785); geser label ke tengah area arsir dengan latar gelap; peta top ≥600 |
+| earthRespin (spin) | **LULUS + catatan** | 2042 (68,07): flash putih (`flashR` 0,65), grade normal (hijau/putih). 2100: dinding debu besar menutup kota. Catatan: dari kamera laut "ke barat" = menjauh, arah tidak terbaca; shake 0,5 m posisi dengan lookAt tetap ke kota 285 m → subjek hampir tidak bergoyang (belum bisa dicek tanpa render) | scene-builder: tambah shake rotasi (offset look) |
+| seaReturns (return) | **GAGAL (ringan)** | 2250 (75,0): hanya pita laut tipis di horizon (hitungan: dinding 25 m di 750 m ≈ 40 px), terbaca laut tenang. Dinding baru terbaca ±75,7-76,2 (2282: y 665-1200), muka datar gradasi gelap tanpa buih/puncak, seperti tirai kabut | scene-builder: FOV lebih sempit / kamera lebih tinggi agar dinding terbaca sejak ±74; buih/semburan di puncak, warna muka lebih terang |
+| Sinkron thuds 76,2 | **LULUS + catatan** | mix.wav <150 Hz: -33,1 → -23,8 dB di 76,23 dtk; dinding tiba (u=1) 76,20 → Δ ±25 ms (<1 frame). Tapi >150 Hz tidak naik (-23,1 → -22,8; 200 Hz-3 kHz -23,5 → -24,3 dB): tak terdengar di speaker HP | sound-designer: lapisan splash/crash mid-high di 76,2 |
+| Caption/HUD/safe zone | **LULUS** | semua caption dan HUD di dalam zona aman dan terbaca; 0640 caption samar = fade-in (o 0,18), wajar |
+| Gore | **LULUS** | tidak ada tubuh/darah di semua stills |

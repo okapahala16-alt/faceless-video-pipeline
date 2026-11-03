@@ -2,7 +2,7 @@
 // original shoreline (dashed) and today's water edge, shifted east by the drift. Pure SVG, frame-driven.
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {tl, clamp, Beat} from './timeline';
+import {tl, clamp, Beat, linearCounter} from './timeline';
 import {waterShiftKm} from './scenes/copaPhase2';
 
 // beach crescent in km (x = east, y = north), Forte (SW end) at the origin, Leme ~4 km away at bearing 37 deg
@@ -25,6 +25,8 @@ export const MapDiagram: React.FC<{t: number; beat: Beat}> = ({t, beat}) => {
   if (beat.shot !== 'map_top_down') return null;
   const accent = tl.accentColor ?? tl.titleCard?.color ?? '#F2A33A';
   const d = waterShiftKm(t);
+  // number shown = the counter's value (physics: 428.2 m/s x real seconds), so map and counter always agree
+  const label = beat.counter ? Math.round(linearCounter(beat, t)) : Math.round(d * 1000);
   const o = Math.min(clamp((t - beat.start) / 0.35), clamp((beat.end - t) / 0.3));
   const landPoly = `${path(PTS)} L${px(X1)},${py(Y1)} L${px(X0)},${py(Y1)} L${px(X0)},${py(PTS[0][1])} Z`;
   // exposed seabed: between the old shoreline and the new edge (old shore shifted east by d)
@@ -33,7 +35,7 @@ export const MapDiagram: React.FC<{t: number; beat: Beat}> = ({t, beat}) => {
   const mid = shore(0.5), midNew = [mid[0] + d, mid[1]];
   const mono = {fontFamily: 'Space Mono', fontWeight: 700} as const;
   return <AbsoluteFill style={{background: '#0b1622', opacity: o}}>
-    <svg width={W} height={H} style={{position: 'absolute', left: 90, top: 575}} viewBox={`0 0 ${W} ${H}`}>
+    <svg width={W} height={H} style={{position: 'absolute', left: 90, top: 610}} viewBox={`0 0 ${W} ${H}`}>
       <defs>
         <pattern id="bed" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(37)">
           <rect width="14" height="14" fill="#3a434d" /><line x1="0" y1="0" x2="0" y2="14" stroke="#4d5763" strokeWidth="5" />
@@ -50,14 +52,15 @@ export const MapDiagram: React.FC<{t: number; beat: Beat}> = ({t, beat}) => {
       {/* drift arrow at the middle of the beach */}
       <line x1={px(mid[0]) + 8} y1={py(mid[1])} x2={px(midNew[0]) - 14} y2={py(midNew[1])} stroke={accent} strokeWidth={4} />
       <polygon points={`${px(midNew[0]) - 2},${py(midNew[1])} ${px(midNew[0]) - 22},${py(midNew[1]) - 11} ${px(midNew[0]) - 22},${py(midNew[1]) + 11}`} fill={accent} />
-      <text x={px(mid[0] + d / 2)} y={py(mid[1]) + 42} textAnchor="middle" fill={accent} style={{...mono, fontSize: 30}}>{Math.round(d * 1000).toLocaleString('en-US')} M EAST</text>
+      <rect x={px(mid[0] + d / 2) - 120} y={py(mid[1]) + 50} width={240} height={40} rx={8} fill="#0b1622" opacity={0.85} />
+      <text x={px(mid[0] + d / 2)} y={py(mid[1]) + 80} textAnchor="middle" fill={accent} style={{...mono, fontSize: 30}}>{label.toLocaleString('en-US')} M EAST</text>
       {/* labels */}
       <text x={px(PTS[0][0]) - 10} y={py(PTS[0][1]) + 34} textAnchor="end" fill="#e8eef4" style={{...mono, fontSize: 28}}>FORTE</text>
       <text x={px(PTS[40][0]) - 14} y={py(PTS[40][1]) - 14} textAnchor="end" fill="#e8eef4" style={{...mono, fontSize: 28}}>LEME</text>
-      <text x={px(shore(0.25)[0]) - 18} y={py(shore(0.25)[1])} textAnchor="end" fill="#ffffff" style={{...mono, fontSize: 26}}>ORIGINAL</text>
-      <text x={px(shore(0.25)[0]) - 18} y={py(shore(0.25)[1]) + 30} textAnchor="end" fill="#ffffff" style={{...mono, fontSize: 26}}>SHORELINE</text>
-      <text x={px(shore(0.75)[0] + d) + 16} y={py(shore(0.75)[1])} fill="#bfe9ff" style={{...mono, fontSize: 26}}>WATER&apos;S</text>
-      <text x={px(shore(0.75)[0] + d) + 16} y={py(shore(0.75)[1]) + 30} fill="#bfe9ff" style={{...mono, fontSize: 26}}>EDGE NOW</text>
+      <text x={px(shore(0.25)[0]) - 34} y={py(shore(0.25)[1])} textAnchor="end" fill="#ffffff" style={{...mono, fontSize: 26}}>ORIGINAL</text>
+      <text x={px(shore(0.25)[0]) - 34} y={py(shore(0.25)[1]) + 30} textAnchor="end" fill="#ffffff" style={{...mono, fontSize: 26}}>SHORELINE</text>
+      <text x={px(shore(0.75)[0] + d) + 34} y={py(shore(0.75)[1])} fill="#bfe9ff" style={{...mono, fontSize: 26}}>WATER&apos;S</text>
+      <text x={px(shore(0.75)[0] + d) + 34} y={py(shore(0.75)[1]) + 30} fill="#bfe9ff" style={{...mono, fontSize: 26}}>EDGE NOW</text>
       {/* scale bar + north arrow */}
       <g transform={`translate(${W - 40 - S}, ${H - 44})`}>
         <rect width={S} height={10} fill="#ffffff" /><rect width={S / 2} height={10} fill="#0b1622" stroke="#ffffff" strokeWidth={2} />

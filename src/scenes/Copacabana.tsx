@@ -461,20 +461,21 @@ export function copaShot(id: string, f: number): Shot {
       const H = bldCenter(HERO), tau = t - runStart(t, id), a = 0.1 * clamp(tau / 9);
       const sx = SIDE.x * Math.cos(a) - SIDE.z * Math.sin(a), sz = SIDE.x * Math.sin(a) + SIDE.z * Math.cos(a);
       const P = [H.x + sx * 120 + WEST.x * 55, 92 - 6 * clamp(tau / 9), H.z + sz * 120 + WEST.z * 55];
-      const L = [H.x + EAST.x * 25, 12, H.z + EAST.z * 25];
+      const L = [H.x + EAST.x * 260, 0, H.z + EAST.z * 260]; // far enough out that the horizon (and the sea) is in frame
       return {p0: P, p1: P, l0: L, l1: L, fov: 40, focus: [H.x, 0, H.z]};
     }
     // high above the old waterline, 45 deg down toward the south-east: seabed opening up as the sea leaves
     case 'shoreline_high_angle': {
-      // 150 m up behind the beachfront, pitched down: city roofs and beach at the bottom, the open seabed,
-      // and the receding water at the horizon
+      // 300 m up, ~340 m inland, pitched ~30 deg down (solved so the old beach lands around y 1350 px and the
+      // receding water edge around y 650 px): city roofs at the bottom, beach, open seabed, the water far out
       const tau = clamp((t - runStart(t, id)) / 9);
-      const P = [30 + 8 * tau, 150 + 30 * tau, 150 + 10 * tau];
-      const L = [P[0] - 120, P[1] - 210, P[2] - 380];
+      const P = [30, 300 + 20 * tau, 340 + 15 * tau];
+      const dirx = -0.12, dirz = -1, pitch = (29.8 * Math.PI) / 180, n = Math.hypot(dirx, dirz);
+      const L = [P[0] + (dirx / n) * 400 * Math.cos(pitch), P[1] - 400 * Math.sin(pitch), P[2] + (dirz / n) * 400 * Math.cos(pitch)];
       return {p0: P, p1: P, l0: L, l1: L, fov: 54, focus: [0, 0, 10]};
     }
     // low on the beach looking south-east: the returning wall rises above the horizon
-    case 'shoreline_high_angle_return': return {p0: [18, 10, 26], p1: [16, 11, 24], l0: [-40, 16, -300], l1: [-36, 18, -280], fov: 56, focus: [0, 0, -10]};
+    case 'shoreline_high_angle_return': return {p0: [18, 10, 26], p1: [16, 11, 24], l0: [-40, 22, -300], l1: [-36, 24, -280], fov: 38, focus: [0, 0, -10]};
     // wide from the sea (over the now dry seabed) back toward the beach and the city
     case 'copa_wide_from_sea': return {p0: [70, 24, -235], p1: [52, 22, -218], l0: [0, 16, 40], l1: [-4, 16, 40], fov: 55, focus: [0, 0, 20]};
     // the shore beat is drawn as a 2D diagram in the overlay; the 3D camera just looks straight down
@@ -486,7 +487,7 @@ export function copaShot(id: string, f: number): Shot {
 const HERO = BUILDINGS.reduce((a, b) => (Math.abs(b.x + 10) < Math.abs(a.x + 10) ? b : a));
 // fog per shot: the world is a few hundred metres wide; haze hides its edges while showing kilometres of seabed
 const FOG: Record<string, [number, number]> = {
-  avenida_buildings_low: [140, 760], shoreline_high_angle: [220, 2300], shoreline_high_angle_return: [160, 1700],
+  avenida_buildings_low: [220, 1900], shoreline_high_angle: [220, 2300], shoreline_high_angle_return: [160, 1700],
   copa_wide_from_sea: [260, 1500], map_top_down: [2000, 4000],
 };
 
@@ -541,7 +542,7 @@ export const CopacabanaWorld: React.FC = () => {
     <hemisphereLight ref={hemi} args={['#e3f2ff', '#e2c896', 0.85]} />
     <directionalLight ref={sun} position={[-14, 34, -26]} intensity={2.0} color="#fff1dc" castShadow
       shadow-mapSize={[2048, 2048]} shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-40} shadow-camera-far={140} shadow-bias={-0.0005} />
-    <mesh position={[-90 + cam.pos[0], 85, -320 + cam.pos[2]]}><sphereGeometry args={[14, 20, 16]} /><meshBasicMaterial color="#fff6d8" fog={false} /></mesh>
+    <mesh position={[-90 + cam.pos[0], 85 + Math.max(0, cam.pos[1] - 20), -320 + cam.pos[2]]}><sphereGeometry args={[14, 20, 16]} /><meshBasicMaterial color="#fff6d8" fog={false} /></mesh>
     {cam.pos[1] < 100 && <Clouds />}
     {/* open ocean: reaches far east (-x, -z) for shots that drift 2 km out to sea; near edge unchanged (z 150) */}
     {oceanMoves ? <OceanShift><Sea /></OceanShift> : <>

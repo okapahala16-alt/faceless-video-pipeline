@@ -380,7 +380,8 @@
         "from": 785,
         "to": 946,
         "unit": "M",
-        "dec": 0
+        "dec": 0,
+        "linear": true
       },
       "drone": {
         "intensity": 0.5
@@ -432,7 +433,8 @@
         "from": 946,
         "to": 1106,
         "unit": "M",
-        "dec": 0
+        "dec": 0,
+        "linear": true
       },
       "drone": {
         "intensity": 0.5
@@ -490,7 +492,8 @@
         "from": 1106,
         "to": 1267,
         "unit": "M",
-        "dec": 0
+        "dec": 0,
+        "linear": true
       },
       "drone": {
         "intensity": 0.55
@@ -841,6 +844,27 @@
         {
           "type": "thuds",
           "at": 3.2
+        },
+        {
+          "type": "impact",
+          "level": "medium",
+          "at": 3.2,
+          "punch": true,
+          "mid": 1.0,
+          "gain": 0.45,
+          "splash": true
+        },
+        {
+          "type": "noise_wall",
+          "at": 3.2,
+          "dur": 1.6,
+          "intensity": 0.38,
+          "fadeIn": 0.02,
+          "fadeOut": 1.3,
+          "color": "white",
+          "lo": 900,
+          "hi": 9000,
+          "splash": true
         }
       ]
     },

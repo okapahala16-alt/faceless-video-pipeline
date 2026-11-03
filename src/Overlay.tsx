@@ -6,7 +6,7 @@ import '@fontsource/inter/600.css';
 import '@fontsource/eb-garamond/500-italic.css';
 import '@fontsource/eb-garamond/600.css';
 import '@fontsource/eb-garamond/600-italic.css';
-import {tl, FPS, beatAt, Word, clamp, ease, lerp, Beat, CaptionStyle, Hud} from './timeline';
+import {tl, FPS, beatAt, Word, clamp, ease, lerp, linearCounter, Beat, CaptionStyle, Hud} from './timeline';
 import {gravity, T, PEOPLE, KID_INDEX, fr, TE} from './sim';
 import {MapDiagram} from './MapDiagram';
 
@@ -57,7 +57,7 @@ const CounterCard: React.FC<{t: number}> = ({t}) => {
   if (!c) return null;
   const u = ease(clamp((t - b.start - 0.3) / Math.max(0.5, (b.end - b.start) * 0.75)));
   const kid = PEOPLE[KID_INDEX];
-  let v = c.unit === 'm/s²' ? gravity(t) : lerp(c.from, c.to, u);
+  let v = c.unit === 'm/s²' ? gravity(t) : c.linear ? linearCounter(b, t) : lerp(c.from, c.to, u);
   if (b.id === 'jump') { let m = 0; for (let i = 0; i <= fr(t); i++) m = Math.max(m, kid.y[i]); v = Math.max(0.5, Math.min(3.0, m + 0.03)); }
   const enter = ease(clamp((t - b.start) / 0.25));
   if (b.hud) { // beat has a HUD: counter sits centred below the HUD block, label in the episode accent

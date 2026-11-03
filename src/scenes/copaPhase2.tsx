@@ -45,8 +45,8 @@ export function waterShift(t: number): number {
 function wallHeight(t: number): number {
   if (t < T2.ret) return 1.2 + 2.5 * clamp((t - (TE.drift0 ?? INF)) / 6);
   const u = (t - T2.ret) / RETURN_TRAVEL;
-  if (u < 1) return 4 + 30 * Math.pow(u, 0.7);
-  return Math.max(0, 34 * (1 - (u - 1) * 3));
+  if (u < 1) return 6 + 54 * Math.pow(u, 0.6);
+  return Math.max(0, 60 * (1 - (u - 1) * 3));
 }
 const SEABED_SLOPE = 0.012; // m down per m from the old shoreline
 const seabedY = (dist: number) => -0.55 - SEABED_SLOPE * Math.max(0, dist);
@@ -87,7 +87,14 @@ const WaterFront: React.FC = () => {
   if (h < 0.7 || d < 1) return null;
   const lean = t > T2.ret ? -0.35 * clamp((t - T2.ret) / RETURN_TRAVEL) : 0.12;
   // the group is already shifted with the water, so the face sits on the old shoreline line z = 0
-  return <mesh geometry={geo} material={mat} position={[0, -0.35 - depth + h / 2, 0.2]} rotation={[lean, 0, 0]} scale={[1, h, 1]} />;
+  const top = -0.35 - depth + h;
+  return <group>
+    <mesh geometry={geo} material={mat} position={[0, -0.35 - depth + h / 2, 0.2]} rotation={[lean, 0, 0]} scale={[1, h, 1]} />
+    {/* foam crest: a white rolling lip on top of the returning wall */}
+    {t > T2.ret && <mesh position={[0, top - 0.4, 0.2 + Math.sin(-lean) * h * 0.5 + 1.5]} rotation={[lean * 1.6, 0, 0]} material={M('#f4fbff')}>
+      <boxGeometry args={[9000, Math.max(1.2, h * 0.08), 4 + h * 0.12]} />
+    </mesh>}
+  </group>;
 };
 
 // ---------- exposed seabed (anchored, so it turns slate in the split grade) ----------
@@ -126,7 +133,7 @@ const shockOn = (t: number) => Number.isFinite(T2.shock) && t >= T2.shock && t <
 export const ShockFronts: React.FC<{near: [number, number]; radius?: number}> = ({near, radius = 120}) => {
   const f = useCurrentFrame(), t = f / FPS;
   const list = useMemo(() => BUILDINGS.filter((b) => Math.abs(bldCenter(b).x - near[0]) < radius), [near, radius]);
-  const shellMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.3, side: THREE.DoubleSide,
+  const shellMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.17, side: THREE.DoubleSide,
     depthWrite: false, blending: THREE.AdditiveBlending, fog: true}), []);
   const edgeMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending}), []);
   const streaks = useMemo(() => {
@@ -151,9 +158,11 @@ export const ShockFronts: React.FC<{near: [number, number]; radius?: number}> = 
       const c = bldCenter(b), r = Math.hypot(b.w, b.d) * 0.55;
       // start at the building's flank (perpendicular to the flow), race east past it
       const perp = {x: EAST.z * s.side, z: -EAST.x * s.side};
+      // flow arrives from the west (upwind) near the centre line, bends out around the shock shell, races past
       const u = ((age * s.sp * 0.6 + s.ph) % 1);
-      const along = -r * 0.6 + u * (r * 3 + 40);
-      v.set(c.x + perp.x * r + EAST.x * along, c.y + s.h * b.h * 1.05, c.z + perp.z * r + EAST.z * along);
+      const along = -r * 2.4 + u * (r * 4.6 + 40);
+      const bend = 0.12 + 1.0 * clamp((along + r * 1.3) / (r * 1.3)) ** 2;
+      v.set(c.x + perp.x * r * bend + EAST.x * along, c.y + s.h * b.h * 1.05, c.z + perp.z * r * bend + EAST.z * along);
       e.set(0, flowYaw, 0); q.setFromEuler(e); sc.set(s.len * (0.4 + 0.6 * Math.sin(Math.PI * u)), 1, 1);
       m.compose(v, q, sc); streakMesh.setMatrixAt(i, m);
     });

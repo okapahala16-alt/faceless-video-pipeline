@@ -75,8 +75,14 @@ export function cameraAt(f: number, shots: (id: string, f: number) => Shot = sho
   const k = shake + snapPunch;
   const pos: [number, number, number] = [p[0] + Math.sin(f * 1.7) * k, p[1] + Math.cos(f * 2.3) * k, p[2]];
   const ek = eventShake(t);
-  if (ek > 0) { pos[0] += Math.sin(f * 2.9 + 1) * ek; pos[1] += Math.cos(f * 3.7) * ek * 0.7; pos[2] += Math.sin(f * 2.1 + 2) * ek * 0.6; }
-  return {pos, look: [l[0], l[1], l[2]], fov: s.fov ?? 50, focus: s.focus ?? [0, 0, 0]};
+  const look: [number, number, number] = [l[0], l[1], l[2]];
+  if (ek > 0) {
+    pos[0] += Math.sin(f * 2.9 + 1) * ek; pos[1] += Math.cos(f * 3.7) * ek * 0.7; pos[2] += Math.sin(f * 2.1 + 2) * ek * 0.6;
+    // rotational jitter: move the look point in proportion to its distance (~0.7 deg per unit of shake)
+    const dist = Math.hypot(l[0] - p[0], l[1] - p[1], l[2] - p[2]) * 0.012 * ek;
+    look[0] += Math.sin(f * 3.3 + 0.5) * dist; look[1] += Math.cos(f * 2.7 + 1.3) * dist * 0.8; look[2] += Math.sin(f * 3.9) * dist;
+  }
+  return {pos, look, fov: s.fov ?? 50, focus: s.focus ?? [0, 0, 0]};
 }
 export const CameraRig: React.FC<{shots?: (id: string, f: number) => Shot}> = ({shots = shotFor}) => {
   const f = useCurrentFrame();

@@ -1,6 +1,10 @@
 """script.json -> per-beat TTS, procedural SFX, ambience, final mix + timeline.json for Remotion.
-Usage: python build_audio.py script.json ../public
-TTS backend: Kokoro (stand-in for OmniVoice until HuggingFace is reachable)."""
+Usage: python build_audio.py script.json public
+TTS engine is set in script.json "tts":
+  {"engine": "kokoro"}                                   (English, CPU, default)
+  {"engine": "omnivoice", "ref_audio": "voices/me.wav",  (voice clone, any language, GPU)
+   "ref_text": "exact words in the clip", "language": "id", "num_step": 32}
+  {"engine": "omnivoice", "instruct": "male, low pitch"} (voice design, best in English)"""
 import sys, os, json, re
 import numpy as np, soundfile as sf
 
@@ -19,6 +23,32 @@ def tts_kokoro(text, voice, speed):
     assert sr == SR
     return trim(samples.astype(np.float32))
 
+_OV = {}
+def tts_omnivoice(text, cfg, speed):
+    import torch
+    from omnivoice import OmniVoice
+    if "model" not in _OV:
+        dev = "cuda:0" if torch.cuda.is_available() else "cpu"
+        _OV["model"] = OmniVoice.from_pretrained(cfg.get("model", "k2-fsa/OmniVoice"), device_map=dev,
+                                                 dtype=torch.float16 if dev != "cpu" else torch.float32)
+        if cfg.get("ref_audio"):
+            ref = os.path.join(HERE, "..", cfg["ref_audio"])
+            if not cfg.get("ref_text"):
+                sys.exit("tts.ref_text is required: type exactly what is said in the reference clip")
+            _OV["prompt"] = _OV["model"].create_voice_clone_prompt(ref_audio=ref, ref_text=cfg["ref_text"])
+    kw = {"language": cfg.get("language"), "num_step": cfg.get("num_step", 32)}
+    if speed and speed != 1.0: kw["speed"] = speed
+    if "prompt" in _OV: kw["voice_clone_prompt"] = _OV["prompt"]
+    elif cfg.get("instruct"): kw["instruct"] = cfg["instruct"]
+    out = _OV["model"].generate(text=text, **kw)
+    return trim(np.asarray(out[0], dtype=np.float32))
+
+def synth(text, sc):
+    cfg = sc.get("tts", {"engine": "kokoro"})
+    if cfg.get("engine") == "omnivoice":
+        return tts_omnivoice(text, cfg, sc.get("speed", 1.0))
+    return tts_kokoro(text, sc.get("voice", "am_michael"), sc.get("speed", 1.0))
+
 def trim(a, thr=0.01):
     idx = np.where(np.abs(a) > thr)[0]
     if len(idx) == 0: return a
@@ -28,7 +58,7 @@ def trim(a, thr=0.01):
 def word_times(text, dur):
     words = text.split()
     def weight(w):
-        core = re.sub(r"[^A-Za-z0-9']", "", w)
+        core = re.sub(r"[^\w']", "", w)
         syl = max(1, len(re.findall(r"[aeiouy]+", core.lower())))
         pause = 1.6 if re.search(r"[.?!]$", w) else (0.9 if w.endswith(",") else 0)
         return syl + 0.15 * len(core), pause
@@ -122,7 +152,7 @@ def main(script_path, public_dir):
     lead, tail = 0.35, 1.6
     t = lead; beats = []; vo_clips = []
     for b in sc["beats"]:
-        a = tts_kokoro(b.get("say", b["text"]), sc.get("voice", "am_michael"), sc.get("speed", 1.0))
+        a = synth(b.get("say", b["text"]), sc)
         d = len(a) / SR
         beats.append({**b, "start": round(t, 3), "voStart": round(t, 3), "voDur": round(d, 3),
                       "words": [{**w, "s": round(w["s"] + t, 3), "e": round(w["e"] + t, 3)} for w in word_times(b["text"], d)]})
@@ -143,7 +173,8 @@ def main(script_path, public_dir):
     mix = mix / max(1e-6, np.max(np.abs(mix))) * 0.89
     sf.write(os.path.join(public_dir, "audio", "mix.wav"), mix.astype(np.float32), SR)
     sf.write(os.path.join(public_dir, "audio", "vo.wav"), vo.astype(np.float32), SR)
-    tl = {"title": sc["title"], "fps": 30, "duration": round(total, 3), "beats": beats}
+    tl = {"title": sc["title"], "fps": 30, "duration": round(total, 3), "locale": sc.get("locale", "en-US"),
+          "endCard": sc.get("endCard", ["Where would", "you", "stand?"]), "beats": beats}
     json.dump(tl, open(os.path.join(public_dir, "timeline.json"), "w"), indent=1)
     print(f"total {total:.2f}s, {len(beats)} beats")
     for b in beats: print(f"  {b['start']:6.2f}-{b['end']:6.2f} {b['id']:9s} vo {b['voDur']:.2f}s")

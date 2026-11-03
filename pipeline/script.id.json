@@ -1,0 +1,282 @@
+{
+ "title": "Gimana kalau gravitasi turun jadi kayak di Bulan selama 10 detik?",
+ "voice": "am_michael",
+ "speed": 1.0,
+ "gap": 0.28,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Gimana kalau gravitasi bumi tiba-tiba turun jadi kayak di Bulan, cuma sepuluh detik?",
+   "label": "GIMANA KALAU",
+   "highlight": [
+    "gravitasi",
+    "sepuluh"
+   ],
+   "shot": "orbit_wide",
+   "counter": {
+    "label": "GRAVITASI",
+    "from": 9.81,
+    "to": 9.81,
+    "unit": "m/s²",
+    "dec": 2
+   },
+   "sfx": [
+    {
+     "type": "whoosh",
+     "at": 0.0
+    }
+   ]
+  },
+  {
+   "id": "place",
+   "text": "Tengah hari di Pantai Kuta, Bali. Ribuan orang lagi santai di pasir. Nggak ada yang siap.",
+   "label": "PANTAI KUTA · 12:00",
+   "highlight": [
+    "Kuta",
+    "siap"
+   ],
+   "shot": "beach_low",
+   "counter": {
+    "label": "GRAVITASI",
+    "from": 9.81,
+    "to": 9.81,
+    "unit": "m/s²",
+    "dec": 2
+   },
+   "sfx": []
+  },
+  {
+   "id": "drop",
+   "text": "Detik pertama. Gravitasi anjlok jadi satu koma enam. Semua orang mendadak enam kali lebih ringan.",
+   "label": "DETIK 1",
+   "highlight": [
+    "enam"
+   ],
+   "shot": "crowd_push",
+   "gravityTo": 1.62,
+   "counter": {
+    "label": "GRAVITASI",
+    "from": 9.81,
+    "to": 1.62,
+    "unit": "m/s²",
+    "dec": 2
+   },
+   "sfx": [
+    {
+     "type": "drop",
+     "at": 0.6
+    }
+   ]
+  },
+  {
+   "id": "jump",
+   "text": "Seorang anak lompat buat nangkep frisbee, dan dia terus naik. Tiga meter.",
+   "label": "DETIK 3",
+   "highlight": [
+    "naik",
+    "Tiga"
+   ],
+   "shot": "kid_follow",
+   "event": "kidJump",
+   "counter": {
+    "label": "TINGGI LOMPATAN",
+    "from": 0.5,
+    "to": 3.0,
+    "unit": "m",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "rise",
+     "at": 0.5
+    }
+   ]
+  },
+  {
+   "id": "hang",
+   "text": "Melayang di udara? Hampir empat detik.",
+   "label": "DETIK 4",
+   "highlight": [
+    "empat"
+   ],
+   "shot": "kid_side",
+   "counter": {
+    "label": "WAKTU MELAYANG",
+    "from": 0.6,
+    "to": 3.9,
+    "unit": "s",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "tick",
+     "at": 0.9
+    }
+   ]
+  },
+  {
+   "id": "waves",
+   "text": "Ombak berdiri lebih tinggi, terus pecah dalam gerak lambat.",
+   "label": "DETIK 5",
+   "highlight": [
+    "gerak",
+    "lambat"
+   ],
+   "shot": "wave_low",
+   "event": "bigWave",
+   "counter": {
+    "label": "TINGGI OMBAK",
+    "from": 1.2,
+    "to": 4.0,
+    "unit": "m",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "wave",
+     "at": 0.3
+    }
+   ]
+  },
+  {
+   "id": "drift",
+   "text": "Payung, bola pantai, pasir. Semua yang ringan terbawa angin.",
+   "label": "DETIK 7",
+   "highlight": [
+    "terbawa"
+   ],
+   "shot": "drift_up",
+   "event": "drift",
+   "counter": {
+    "label": "BENDA MELAYANG",
+    "from": 0,
+    "to": 1840,
+    "unit": "",
+    "dec": 0
+   },
+   "sfx": [
+    {
+     "type": "wind",
+     "at": 0.0
+    }
+   ]
+  },
+  {
+   "id": "everyone",
+   "text": "Detik kesembilan. Setengah pantai melayang. Jujur aja, siapa yang nggak bakal lompat?",
+   "label": "DETIK 9",
+   "highlight": [
+    "Setengah",
+    "lompat"
+   ],
+   "shot": "crowd_air",
+   "event": "massJump",
+   "counter": {
+    "label": "ORANG MELAYANG",
+    "from": 1840,
+    "to": 6200,
+    "unit": "",
+    "dec": 0
+   },
+   "sfx": [
+    {
+     "type": "rise",
+     "at": 0.2
+    }
+   ]
+  },
+  {
+   "id": "snap",
+   "text": "Detik kesepuluh. Gravitasi balik lagi.",
+   "label": "DETIK 10",
+   "highlight": [
+    "balik"
+   ],
+   "shot": "crowd_air_hold",
+   "gravityTo": 9.81,
+   "counter": {
+    "label": "GRAVITASI",
+    "from": 1.62,
+    "to": 9.81,
+    "unit": "m/s²",
+    "dec": 2
+   },
+   "sfx": [
+    {
+     "type": "snap",
+     "at": 0.75
+    }
+   ]
+  },
+  {
+   "id": "fall",
+   "text": "Dan semua yang di atas jatuh tiga meter, barengan.",
+   "label": "BENTURAN",
+   "highlight": [
+    "barengan"
+   ],
+   "shot": "fall_drop",
+   "event": "massFall",
+   "counter": {
+    "label": "KECEPATAN JATUH",
+    "from": 0,
+    "to": 27.6,
+    "unit": "km/h",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "thuds",
+     "at": 0.75
+    }
+   ]
+  },
+  {
+   "id": "roof",
+   "text": "Rasanya kayak lompat dari atap rumah satu lantai. Untung jatuhnya ke pasir.",
+   "label": "MENDARAT",
+   "highlight": [
+    "atap",
+    "pasir"
+   ],
+   "shot": "aftermath",
+   "counter": {
+    "label": "KECEPATAN JATUH",
+    "from": 27.6,
+    "to": 27.6,
+    "unit": "km/h",
+    "dec": 1
+   },
+   "sfx": []
+  },
+  {
+   "id": "cta",
+   "text": "Jadi, lo bakal ikut lompat nggak? Tulis di komen lo berdiri di mana.",
+   "label": "GILIRAN LO",
+   "highlight": [
+    "lompat"
+   ],
+   "shot": "orbit_end",
+   "counter": null,
+   "sfx": [
+    {
+     "type": "whoosh",
+     "at": 0.0
+    }
+   ]
+  }
+ ],
+ "locale": "id-ID",
+ "endCard": [
+  "Lo bakal",
+  "berdiri",
+  "di mana?"
+ ],
+ "tts": {
+  "engine": "omnivoice",
+  "ref_audio": "voices/me.wav",
+  "ref_text": "GANTI dengan kata-kata persis yang diucapkan di voices/me.wav",
+  "language": "id",
+  "num_step": 32
+ }
+}

@@ -17,7 +17,7 @@
     "label": "GRAVITY",
     "from": 9.81,
     "to": 9.81,
-    "unit": "m/s\u00b2",
+    "unit": "m/s²",
     "dec": 2
    },
    "sfx": [
@@ -30,7 +30,7 @@
   {
    "id": "place",
    "text": "Noon. Kuta Beach, Bali. Thousands of people on the sand. Nobody sees it coming.",
-   "label": "KUTA BEACH \u00b7 12:00",
+   "label": "KUTA BEACH · 12:00",
    "highlight": [
     "Kuta",
     "Nobody"
@@ -40,7 +40,7 @@
     "label": "GRAVITY",
     "from": 9.81,
     "to": 9.81,
-    "unit": "m/s\u00b2",
+    "unit": "m/s²",
     "dec": 2
    },
    "sfx": [],
@@ -59,7 +59,7 @@
     "label": "GRAVITY",
     "from": 9.81,
     "to": 1.62,
-    "unit": "m/s\u00b2",
+    "unit": "m/s²",
     "dec": 2
    },
    "sfx": [
@@ -199,7 +199,7 @@
     "label": "GRAVITY",
     "from": 1.62,
     "to": 9.81,
-    "unit": "m/s\u00b2",
+    "unit": "m/s²",
     "dec": 2
    },
    "sfx": [
@@ -267,5 +267,6 @@
     }
    ]
   }
- ]
+ ],
+ "locale": "en-US"
 }

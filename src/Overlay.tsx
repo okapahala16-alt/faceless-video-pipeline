@@ -7,7 +7,9 @@ import {tl, FPS, beatAt, Word, clamp, ease, lerp} from './timeline';
 import {gravity, T, PEOPLE, KID_INDEX, fr} from './sim';
 
 const ACCENT = '#7CFFB2';
-const norm = (w: string) => w.replace(/[^A-Za-z0-9']/g, '').toLowerCase();
+const END = tl.endCard ?? ['Where would', 'you', 'stand?'];
+const ID = (tl.locale || '').startsWith('id');
+const norm = (w: string) => w.replace(/[^\p{L}\p{N}']/gu, '').toLowerCase();
 
 // group words into short caption chunks (max 3 words, break after punctuation)
 type Chunk = {words: (Word & {hl: boolean})[]; s: number; e: number};
@@ -38,13 +40,13 @@ const Captions: React.FC<{t: number}> = ({t}) => {
   </div>;
 };
 
-const fmt = (v: number, dec: number) => v.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+const fmt = (v: number, dec: number) => v.toLocaleString(tl.locale || 'en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec});
 const CounterCard: React.FC<{t: number}> = ({t}) => {
   const b = beatAt(t); const c = b.counter;
   if (!c) return null;
   const u = ease(clamp((t - b.start - 0.3) / Math.max(0.5, (b.end - b.start) * 0.75)));
   const kid = PEOPLE[KID_INDEX];
-  let v = c.label === 'GRAVITY' ? gravity(t) : lerp(c.from, c.to, u);
+  let v = c.unit === 'm/s²' ? gravity(t) : lerp(c.from, c.to, u);
   if (b.id === 'jump') { let m = 0; for (let i = 0; i <= fr(t); i++) m = Math.max(m, kid.y[i]); v = Math.max(0.5, Math.min(3.0, m + 0.03)); }
   const enter = ease(clamp((t - b.start) / 0.25));
   return <div style={{position: 'absolute', top: 210, left: 64, padding: '26px 34px 22px', borderRadius: 28, background: 'rgba(11,19,32,.72)', border: '2px solid rgba(255,255,255,.14)',
@@ -59,12 +61,12 @@ const GravityMeter: React.FC<{t: number}> = ({t}) => {
   const g = gravity(t); const h = 520; const fill = (g / 9.81) * h;
   const low = g < 5;
   return <div style={{position: 'absolute', right: 64, top: 230, width: 120, alignItems: 'center', display: 'flex', flexDirection: 'column', gap: 14}}>
-    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 22, color: '#fff', opacity: 0.85, letterSpacing: 2}}>EARTH</div>
+    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 22, color: '#fff', opacity: 0.85, letterSpacing: 2}}>{ID ? 'BUMI' : 'EARTH'}</div>
     <div style={{width: 34, height: h, borderRadius: 20, background: 'rgba(11,19,32,.55)', border: '2px solid rgba(255,255,255,.2)', position: 'relative', overflow: 'hidden'}}>
       <div style={{position: 'absolute', bottom: 0, left: 0, right: 0, height: fill, background: low ? `linear-gradient(${ACCENT}, #3fd1a0)` : 'linear-gradient(#ffd166, #ff8a3d)', borderRadius: 20}} />
       <div style={{position: 'absolute', left: -6, right: -6, bottom: (1.62 / 9.81) * h, height: 3, background: '#fff', opacity: 0.8}} />
     </div>
-    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 22, color: '#fff', opacity: 0.85, letterSpacing: 2}}>MOON</div>
+    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 22, color: '#fff', opacity: 0.85, letterSpacing: 2}}>{ID ? 'BULAN' : 'MOON'}</div>
   </div>;
 };
 
@@ -81,7 +83,7 @@ const Title: React.FC<{t: number}> = ({t}) => {
   const o = interpolate(t, [0.2, 0.6, 3.9, 4.5], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   if (o <= 0) return null;
   return <div style={{position: 'absolute', top: 760, left: 70, right: 70, textAlign: 'center', opacity: o}}>
-    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 34, letterSpacing: 8, color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.5)'}}>9.81 → 1.62 m/s²</div>
+    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 34, letterSpacing: 8, color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,.5)'}}>{fmt(9.81, 2)} → {fmt(1.62, 2)} m/s²</div>
   </div>;
 };
 
@@ -100,7 +102,7 @@ export const Overlay: React.FC = () => {
     <Captions t={t} />
     <AbsoluteFill style={{background: '#fff', opacity: flash}} />
     <AbsoluteFill style={{background: '#0b1320', opacity: endO, justifyContent: 'center', alignItems: 'center'}}>
-      <div style={{fontFamily: 'Archivo Black', fontSize: 84, color: '#fff', textAlign: 'center', lineHeight: 1.1}}>Where would<br /><span style={{color: ACCENT}}>you</span> stand?</div>
+      <div style={{fontFamily: 'Archivo Black', fontSize: 84, color: '#fff', textAlign: 'center', lineHeight: 1.1}}>{END[0]}<br /><span style={{color: ACCENT}}>{END[1]}</span> {END[2]}</div>
     </AbsoluteFill>
   </AbsoluteFill>;
 };

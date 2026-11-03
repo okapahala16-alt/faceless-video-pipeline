@@ -22,9 +22,13 @@
 - Kokoro: github.com/thewh1teagle/kokoro-onnx releases `model-files-v1.0`
 - Whisper: github.com/k2-fsa/sherpa-onnx releases `asr-models/sherpa-onnx-whisper-base.en`
 
+## OmniVoice (Indonesian voice clone)
+1. Put a 3-10 s clip of your voice in `voices/me.wav`
+2. In `pipeline/script.id.json`, set `tts.ref_text` to the exact words in that clip
+3. `npm run audio:id`, then `npm run studio` / `npm run render`
+
 ## Not yet done
-- OmniVoice + AudioX (weights on HuggingFace, blocked in this environment)
-- Multilingual Whisper (base.en can't handle Indonesian)
+- AudioX (needs a separate Python 3.8 env)
 - Word timing is estimated from syllables, not Whisper word timestamps
 - Custom UI to repeat the process
 

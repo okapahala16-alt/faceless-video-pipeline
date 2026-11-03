@@ -2,6 +2,12 @@
  "title": "What if gravity dropped to Moon level for 10 seconds?",
  "fps": 30,
  "duration": 52.328,
+ "locale": "en-US",
+ "endCard": [
+  "Where would",
+  "you",
+  "stand?"
+ ],
  "beats": [
   {
    "id": "hook",

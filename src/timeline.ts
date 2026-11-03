@@ -3,7 +3,7 @@ export type Word = {w: string; s: number; e: number};
 export type Counter = {label: string; from: number; to: number; unit: string; dec: number} | null;
 export type Beat = {id: string; text: string; label: string; highlight: string[]; shot: string; counter: Counter;
   start: number; end: number; voStart: number; voDur: number; words: Word[]};
-export const tl = raw as unknown as {title: string; duration: number; beats: Beat[]};
+export const tl = raw as unknown as {title: string; duration: number; locale?: string; endCard?: string[]; beats: Beat[]};
 export const FPS = 30;
 export const beatById = (id: string) => tl.beats.find((b) => b.id === id)!;
 export const beatAt = (t: number) => tl.beats.find((b) => t >= b.start && t < b.end) ?? (t < tl.beats[0].start ? tl.beats[0] : tl.beats[tl.beats.length - 1]);

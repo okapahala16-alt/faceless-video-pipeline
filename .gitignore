@@ -4,3 +4,6 @@ out/
 public/audio/
 __pycache__/
 *.pyc
+voices/*.wav
+voices/*.mp3
+voices/*.pt

@@ -8,7 +8,8 @@
     "render": "remotion render src/index.ts Main out/video.mp4 --codec=h264 --crf=20",
     "audio": "python pipeline/build_audio.py pipeline/script.json public",
     "qa": "python pipeline/qa_transcript.py pipeline/script.json public/audio/vo.wav",
-    "audio:id": "python pipeline/build_audio.py pipeline/script.id.json public"
+    "audio:id": "python pipeline/build_audio.py pipeline/script.id.json public",
+    "voice": "python pipeline/record_voice.py"
   },
   "keywords": [],
   "author": "",

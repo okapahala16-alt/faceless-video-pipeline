@@ -175,3 +175,25 @@ Dua GAGAL dari Re-check diperbaiki dan diverifikasi oleh producer lewat stills (
 - shockFronts: titik pandang EAST×150, cangkang dalam 0,25 + tepi terang di muka barat, cangkang luar 0,12, garis aliran 0,45. Still 0690/0840: gedung di y ±330-1500, cangkang terlihat jelas, laut + tepi air di atas. LULUS (producer).
 - map_top_down: tinggi peta 535 px (bawah ±1145, tidak menyentuh caption), label ORIGINAL SHORELINE di x 14 di dalam peta. Still 1230. LULUS (producer).
 Regresi Kuta: audio md5 identik, 12 frame diff 0.
+
+## Fase 3 (review 2026-11-03 ±15:55)
+
+Build: `public/timeline.json` (15:46) + `public/audio/mix.wav` (md5 `d358357a1e3adc03a2347933fb076aa0`, sama dengan re-check Fase 2).
+Stills: `out/stills_p3/element-{1305,1322,1340,1400,1520,1620,1700,1760,1850,2330,2400,2440}.png`. Kode dibaca: `src/scenes/copaPhase3.tsx`, `src/scenes/CopaOverlay.tsx`. Tanpa render/build.
+
+| Item | Hasil | Bukti | Saran → subagent |
+|---|---|---|---|
+| Cut 44,0 sinkron impact | **LULUS** | `GLOBE_CUT = planet.start + 0,5 = 44,0` (frame 1320); onset impact di mix.wav: RMS 2 ms -36,7 dB @43,998 → -8,9 dB @44,000. 1322: flash putih masih ±0,56, globe close-up |
+| Rio terlihat saat pullback | **GAGAL (ringan)** | 1305 (43,5) kamera rendah di calçadão/gedung, belum "di atas Rio"; 1322 area Rio tertutup flash; 1340/1400 Rio hanya titik putih ±12 px tanpa label (x 507, y 1083, tepat di atas pita caption). Di HP tidak terbaca sebagai Rio | scene-builder: label "RIO" + cincin pulsa 44,0-46,0 di y <1080 |
+| Angin ke timur, ∝ cos lintang | **LULUS + catatan** | kode: lon bertambah = timur, tangen east benar, kecepatan sudut sama → laju linear ∝ cos lat (fisik benar). 1340/1400/1520 pita amber horizontal, 1700 makin jarang ke kutub. Catatan: di tepi globe (limb, x 30-120 dan 940-1050) streak terlihat acak/tegak seperti bulu; arah tidak terbaca dari still | scene-builder: fade streak saat normal hampir tegak lurus kamera |
+| Kutub nol + label | **LULUS** | 1620 "1,670 KM/H · EQUATOR" di garis khatulistiwa, kontras 4,9:1; 1700 "0 KM/H · POLE" di atas kutub, 14,5:1; label mengikuti caption, di luar pita caption dan HUD. Catatan: subteks 22 px kecil untuk HP |
+| Pesawat | **LULUS + catatan** | 1760/1850: jet generik putih tanpa logo/teks, di atas awan, warna normal (grade normal di timeline). Catatan: hidung terpotong tepi kiri di 1850; sirip ekor masuk zona kanan (x >940); piringan abu di pojok kiri atas 1760 (zona UI) terlihat janggal; garis jendela hitam terbaca seperti retakan | scene-builder (opsional) |
+| Fajar | **LULUS + catatan** | 2330→2400→2440 matahari naik di tenggara (kode: kamera ke -z, matahari (-120, y, -900)), sepi, caption terbaca. Catatan: baji abu di horizon kiri (x 0-480, y 1050-1080) seperti artefak |
+| Transisi | **LULUS (sebagian tidak terverifikasi)** | 57,5, 62,5, 77,0 hard cut yang bertepatan dengan perubahan audio (drone 0,40 + noise_wall 0,15 @57,5; noise_wall 0,5 @62,5; silence_cut @77,0). Tidak ada still di frame batas; 81,5 → end card tidak dicek ulang (lulus di Fase 1 U2) |
+| HUD/caption/safe zone, logo | **LULUS** | semua teks di area aman, terbaca; tidak ada logo/merek |
+
+Status Fase 3: 1 GAGAL ringan (Rio).
+
+
+## Fase 3 – Re-check (producer)
+GAGAL ringan "Rio tidak terbaca" diperbaiki: label "RIO · YOU ARE HERE" (amber, latar gelap, y < 1080) + dua cincin pulsa di 44,0-46,6 (still p3e 1332, 1360). Catatan ikut diperbaiki: garis angin memudar ke arah tepi globe; pesawat tidak lagi dolly-in (hidung + ekor di area aman), piringan abu dihapus, garis jendela lebih halus (1760, 1850); laut fajar diperlebar (tidak ada baji di horizon, 2400); subteks label 26 px. Diverifikasi producer lewat stills. Regresi Kuta identik.

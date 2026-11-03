@@ -180,3 +180,15 @@ Shots (Copacabana): `avenida_buildings_low`, `shoreline_high_angle`, `shoreline_
 `map_top_down` draws a north-up diagram (original shoreline dashed, today's water edge, 1 km scale). Its "M EAST" label uses the beat's counter.
 Counter `"linear": true`: value goes exactly from `from` to `to` across the beat (no easing), e.g. physics counters like DRIFT EAST.
 Fog is set per shot (`FOG` table in Copacabana.tsx) so a small world can show kilometres of seabed.
+
+
+## Mini-scenes (phase 3, `src/scenes/copaPhase3.tsx`, labels in `src/scenes/CopaOverlay.tsx`)
+When a beat uses one of these shots only the mini-scene is rendered (the coastal world is skipped):
+| Shot | Scene |
+|---|---|
+| `pullback_to_globe` | first 0.5 s: fast climb over Rio; then a white cut to the globe (put the impact there) and a ~1.3 s pull back, "RIO" label + pulse rings |
+| `globe_orbit` | slow orbit of the globe; amber air bands flow east (density and length follow cos latitude) |
+| `globe_tilt_to_pole` | tilt toward the north pole; speed gradient shell; "1,670 KM/H · EQUATOR" (first half) then "0 KM/H · POLE" (second half) |
+| `airliner_above_clouds` | generic airliner (no livery) above a moving cloud deck, normal colours |
+| `horizon_dawn` | sea horizon at dawn, sun rising in the south-east |
+Globe land: Natural Earth 110m via the `world-atlas` npm package (public domain data, ISC package).

@@ -538,7 +538,7 @@ export const CopacabanaWorld: React.FC = () => {
     }
   }, [f, focus, shotNow]);
   const mini = miniModeAt(f);
-  if (mini) return <><CameraRig shots={copaShot} /><MiniScene mode={mini} /></>;
+  if (mini) return <><CameraRig shots={copaShot} /><MiniScene mode={mini} camPos={cam.pos} /></>;
   return <>
     <CameraRig shots={copaShot} />
     {/* sky dome and sun sit around the camera, so a camera that drifts kilometres still sees the sky */}

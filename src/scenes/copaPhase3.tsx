@@ -53,7 +53,7 @@ export function miniShot(id: string, f: number): Shot | null {
     }
     case 'globe_orbit': return globeCam(lerp(-14, -4, u), RIO.lon + 4 + 26 * u, R * 6.3 + 6 * u);
     case 'globe_tilt_to_pole': return globeCam(lerp(-4, 48, ease(u)), RIO.lon + 30 + 8 * u, R * 6.1);
-    case 'airliner_above_clouds': return {p0: [40, -7, 108], p1: [31, -6, 101], l0: [3, -5, 0], l1: [4, -5, 0], fov: 36}; // a little below the jet: blue sky behind it, cloud deck at the bottom
+    case 'airliner_above_clouds': return {p0: [42, -7, 112], p1: [38, -6.5, 108], l0: [5, -5, 0], l1: [5.5, -5, 0], fov: 36}; // a little below the jet: blue sky behind it, cloud deck at the bottom
     case 'horizon_dawn': return {p0: [0, 2.6, 0], p1: [0, 2.6, 0], l0: [-12, 5.5, -100], l1: [-12, 6.2, -100], fov: 44};
     default: return null;
   }
@@ -94,8 +94,9 @@ function landTexture(): THREE.Texture {
 }
 
 const windOn = (t: number) => t >= GLOBE_CUT;
+const RIO_Q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...globePos(RIO.lat, RIO.lon, 1)));
 const gradBeat = beatOf('globe_tilt_to_pole');
-export const Globe: React.FC = () => {
+export const Globe: React.FC<{camPos?: number[]}> = ({camPos = [0, 0, 600]}) => {
   const f = useCurrentFrame(), t = f / FPS;
   const tex = useMemo(() => landTexture(), []);
   const globeMat = useMemo(() => new THREE.MeshStandardMaterial({map: tex, roughness: 0.9, flatShading: true}), [tex]);
@@ -130,14 +131,17 @@ export const Globe: React.FC = () => {
       ex.set(-Math.sin(lon * D2R), 0, -Math.cos(lon * D2R)); // east tangent
       ez.crossVectors(ex, ny);
       m.makeBasis(ex, ny, ez); q.setFromRotationMatrix(m);
+      // fade toward the limb: streaks seen edge-on read as fur
+      const toCam = (camPos[0] - x) * ny.x + (camPos[1] - y) * ny.y + (camPos[2] - z) * ny.z;
+      const face = clamp(toCam / (Math.hypot(camPos[0] - x, camPos[1] - y, camPos[2] - z) * 0.45));
       const len = R * 0.09 * c * (0.6 + 0.4 * Math.sin(Math.PI * ((age * 0.7 + s.ph) % 1)));
-      sc.set(Math.max(0.01, len) * grow, c * grow, c * grow);
+      sc.set(Math.max(0.01, len) * grow * face, c * grow * face, c * grow * face);
       m.compose(v, q, sc); streaks.setMatrixAt(i, m);
     });
     streaks.instanceMatrix.needsUpdate = true; streaks.frustumCulled = false;
     if (gradBeat) gradMat.opacity = 0.28 * clamp((t - gradBeat.start) / 0.8);
     (streaks.material as THREE.MeshBasicMaterial).opacity = gradBeat && t >= gradBeat.start ? 0.45 : 0.8;
-  }, [f, t, seeds, streaks, gradMat]);
+  }, [f, t, seeds, streaks, gradMat, camPos]);
   return <>
     <color attach="background" args={['#02040a']} />
     <primitive object={stars} />
@@ -147,8 +151,12 @@ export const Globe: React.FC = () => {
     <mesh geometry={gradGeo} material={gradMat} />
     <mesh material={atmo}><sphereGeometry args={[R * 1.08, 64, 48]} /></mesh>
     <primitive object={streaks} />
-    {/* Rio marker */}
-    <mesh position={globePos(RIO.lat, RIO.lon, R * 1.005)}><sphereGeometry args={[1.2, 12, 8]} /><meshBasicMaterial color="#ffffff" /></mesh>
+    {/* Rio marker + pulse rings while the camera pulls back */}
+    <mesh position={globePos(RIO.lat, RIO.lon, R * 1.005)}><sphereGeometry args={[1.4, 12, 8]} /><meshBasicMaterial color="#ffffff" /></mesh>
+    {[0, 0.5].map((d) => { const a = t - GLOBE_CUT - d, k = ((a % 1) + 1) % 1, on = a >= 0 && t < GLOBE_CUT + 2.2;
+      return on ? <mesh key={d} position={globePos(RIO.lat, RIO.lon, R * 1.006)} quaternion={RIO_Q} scale={2 + 14 * k}>
+        <ringGeometry args={[0.85, 1, 48]} /><meshBasicMaterial color={tl.accentColor ?? '#F2A33A'} transparent opacity={0.9 * (1 - k)} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh> : null; })}
   </>;
 };
 
@@ -161,11 +169,11 @@ const skyMat = (top: string, mid: string, bot: string) => new THREE.ShaderMateri
 });
 const white = new THREE.MeshStandardMaterial({color: '#f3f5f7', roughness: 0.5, flatShading: true});
 const grey = new THREE.MeshStandardMaterial({color: '#aab3bd', roughness: 0.6, flatShading: true});
-const dark = new THREE.MeshStandardMaterial({color: '#2c3540', roughness: 0.4});
+const dark = new THREE.MeshStandardMaterial({color: '#6f8196', roughness: 0.4});
 const Airliner: React.FC = () => <group rotation={[0, 0, 0]}>
   {/* fuselage along -x (nose) */}
   <mesh material={white} rotation={[0, 0, Math.PI / 2]}><capsuleGeometry args={[1.9, 30, 6, 16]} /></mesh>
-  <mesh material={dark} position={[-7, 0.75, 1.85]}><boxGeometry args={[20, 0.32, 0.05]} /></mesh>
+  <mesh material={dark} position={[-7, 0.75, 1.86]}><boxGeometry args={[20, 0.2, 0.05]} /></mesh>
   <mesh material={dark} position={[-16.6, 0.65, 0]} rotation={[0, 0, 0.4]}><boxGeometry args={[1.2, 0.5, 2.6]} /></mesh>
   {/* wings (swept), engines, tail */}
   {[1, -1].map((s) => <group key={s}>
@@ -194,7 +202,6 @@ export const PlaneScene: React.FC = () => {
     <fog attach="fog" args={['#cfe6fb', 300, 1400]} />
     <hemisphereLight args={['#e8f4ff', '#ffffff', 0.9]} />
     <directionalLight position={[-120, 160, 120]} intensity={2.0} color="#fff6e6" />
-    <mesh position={[-400, 260, -700]}><sphereGeometry args={[18, 16, 12]} /><meshBasicMaterial color="#fffbe8" fog={false} /></mesh>
     <group position={[0, bob, 0]} rotation={[0.02 * Math.sin(t * 0.6), 0, 0.015]}><Airliner /></group>
     <primitive object={deck} />
   </>;
@@ -205,7 +212,7 @@ const dawnBeat = beatOf('horizon_dawn');
 export const DawnScene: React.FC = () => {
   const f = useCurrentFrame(), t = f / FPS;
   const sky = useMemo(() => skyMat('#1c3156', '#d99a86', '#ffd6a0'), []);
-  const sea = useMemo(() => { const g = new THREE.PlaneGeometry(4000, 3000, 160, 120); g.rotateX(-Math.PI / 2); g.translate(0, 0, -1500); return g; }, []);
+  const sea = useMemo(() => { const g = new THREE.PlaneGeometry(9000, 3200, 200, 120); g.rotateX(-Math.PI / 2); g.translate(0, 0, -1550); return g; }, []);
   const base = useMemo(() => Float32Array.from(sea.attributes.position.array as Float32Array), [sea]);
   const seaMat = useMemo(() => new THREE.MeshStandardMaterial({color: '#35577a', roughness: 0.3, metalness: 0.15, flatShading: true}), []);
   useLayoutEffect(() => {
@@ -229,5 +236,5 @@ export const DawnScene: React.FC = () => {
   </>;
 };
 
-export const MiniScene: React.FC<{mode: MiniMode}> = ({mode}) =>
-  mode === 'globe' ? <Globe /> : mode === 'plane' ? <PlaneScene /> : mode === 'dawn' ? <DawnScene /> : null;
+export const MiniScene: React.FC<{mode: MiniMode; camPos?: number[]}> = ({mode, camPos}) =>
+  mode === 'globe' ? <Globe camPos={camPos} /> : mode === 'plane' ? <PlaneScene /> : mode === 'dawn' ? <DawnScene /> : null;

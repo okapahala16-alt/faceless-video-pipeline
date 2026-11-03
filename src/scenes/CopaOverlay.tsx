@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import {tl, FPS, clamp, beatAt} from '../timeline';
 import {cameraAt} from '../World';
 import {copaShot} from './Copacabana';
-import {globePos, GLOBE_CUT, R} from './copaPhase3';
+import {globePos, GLOBE_CUT, R, RIO} from './copaPhase3';
 
 const cam = new THREE.PerspectiveCamera(50, 1080 / 1920, 0.25, 7000);
 function project(f: number, p: [number, number, number]) {
@@ -23,7 +23,7 @@ const Label: React.FC<{x: number; y: number; o: number; big: string; small: stri
     fontFamily: 'Space Mono', fontWeight: 700, color, textShadow: '0 2px 12px rgba(0,0,0,.8)'}}>
     <div style={{display: 'inline-block', background: 'rgba(6,10,18,.62)', borderRadius: 14, padding: '8px 18px 6px'}}>
     <div style={{fontSize: 46, lineHeight: 1}}>{big}</div>
-    <div style={{fontSize: 22, letterSpacing: 4, opacity: 0.85}}>{small}</div>
+    <div style={{fontSize: 26, letterSpacing: 4, opacity: 0.9}}>{small}</div>
     </div>
     <div style={{width: 3, height: 34, background: color, margin: '8px auto 0', opacity: 0.8}} />
   </div>;
@@ -46,7 +46,14 @@ export const CopaOverlay: React.FC = () => {
       {pole.visible && oPole > 0 && <Label x={pole.x} y={pole.y} o={oPole} big="0" small="KM/H · POLE" />}
     </>;
   }
+  // "RIO" pinned to the city while the camera pulls back to the globe
+  let rio: React.ReactNode = null;
+  if (b.shot === 'pullback_to_globe' && t >= GLOBE_CUT) {
+    const p = project(f, globePos(RIO.lat, RIO.lon, R * 1.01)), o = clamp((t - GLOBE_CUT - 0.25) / 0.3) * (1 - clamp((t - GLOBE_CUT - 2.4) / 0.4));
+    if (p.visible && o > 0) rio = <Label x={p.x} y={Math.min(p.y - 18, 1060)} o={o} big="RIO" small="YOU ARE HERE" color={accent} />;
+  }
   return <AbsoluteFill style={{pointerEvents: 'none'}}>
+    {rio}
     {labels}
     <AbsoluteFill style={{background: '#fff', opacity: cut}} />
   </AbsoluteFill>;

@@ -38,6 +38,29 @@ set `REMOTION_BROWSER=<path to chrome-headless-shell>`. On a normal PC leave bot
 - `assets/sfx/` SFX + `ambience_*.wav`; `assets/music/` drone beds. Audio files are git-ignored.
 - `voices/` OmniVoice reference clips (git-ignored). Only voices you own or have permission for.
 
+## TIM DAN ALUR KERJA
+Sesi utama = **producer**: membagi kerja, menggabungkan hasil, dan satu-satunya yang bicara ke user.
+Subagent ada di `.claude/agents/`:
+
+| Subagent | Peran | Boleh menyentuh |
+|---|---|---|
+| `script-integrator` | Validasi script package + daftar kerja (shot/event/grade yang belum ada di kode) | dokumen di `docs/scripts/<slug>/` |
+| `scene-builder` | Shot, event, kamera, lingkungan, grade, efek visual 3D | `src/` (bukan audio) |
+| `sound-designer` | Drone, SFX, ambience, mixing, loudness | `pipeline/`, `assets/` (bukan visual) |
+| `qa-reviewer` | Review independen dengan bukti, tidak mengubah kode | tulis `docs/scripts/<slug>/qa-report.md` saja |
+
+Alur per episode:
+1. **Claude chat** menulis script package ke `docs/scripts/<slug>/` (`script.json`, `brief.md`, `sources.md`, `README.md`).
+2. **Rough cut**: render `script.json` apa adanya (shot yang sudah ada), kirim ke user untuk cek timing, caption, audio.
+3. **script-integrator** validasi + bikin daftar kerja dari `shotBrief`, `eventBrief`, `grade` vs kode. Kalau ada yang tidak valid: berhenti dan lapor, jangan menebak.
+4. **Producer lapor daftar kerja ke user. Tunggu persetujuan sebelum build.**
+5. **scene-builder** dan **sound-designer** bekerja (boleh paralel, file berbeda). Setiap perubahan scene: `npm run stills:guides`, cek, perbaiki.
+6. Regresi Kuta (aturan 1 di bawah) setelah menyentuh `src/` atau `pipeline/`.
+7. **qa-reviewer** review stills + audio, tulis `qa-report.md`. Semua GAGAL diperbaiki dulu.
+8. Render final, kirim ke user. **Commit boleh, push hanya dengan izin user.**
+
+Field script yang dibaca manusia/agent tapi diabaikan pipeline: `shotBrief`, `eventBrief`, `grade`, `note`.
+
 ## Rules for changes
 1. **Do not change the Kuta output.** Kuta scripts go through the legacy path (`is_legacy()` in
    build_audio.py). New behaviour must be opt-in via new JSON fields. After touching `src/` or the

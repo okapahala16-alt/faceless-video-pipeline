@@ -1,0 +1,271 @@
+{
+ "title": "What if gravity dropped to Moon level for 10 seconds?",
+ "voice": "am_michael",
+ "speed": 1.0,
+ "gap": 0.28,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "What if Earth's gravity dropped to Moon level, for just ten seconds?",
+   "label": "WHAT IF",
+   "highlight": [
+    "gravity",
+    "ten"
+   ],
+   "shot": "orbit_wide",
+   "counter": {
+    "label": "GRAVITY",
+    "from": 9.81,
+    "to": 9.81,
+    "unit": "m/s\u00b2",
+    "dec": 2
+   },
+   "sfx": [
+    {
+     "type": "whoosh",
+     "at": 0.0
+    }
+   ]
+  },
+  {
+   "id": "place",
+   "text": "Noon. Kuta Beach, Bali. Thousands of people on the sand. Nobody sees it coming.",
+   "label": "KUTA BEACH \u00b7 12:00",
+   "highlight": [
+    "Kuta",
+    "Nobody"
+   ],
+   "shot": "beach_low",
+   "counter": {
+    "label": "GRAVITY",
+    "from": 9.81,
+    "to": 9.81,
+    "unit": "m/s\u00b2",
+    "dec": 2
+   },
+   "sfx": [],
+   "say": "Noon. Koota Beach, Bali. Thousands of people on the sand. Nobody sees it coming."
+  },
+  {
+   "id": "drop",
+   "text": "Second one. Gravity falls to one point six. Everyone suddenly weighs six times less.",
+   "label": "SECOND 1",
+   "highlight": [
+    "six"
+   ],
+   "shot": "crowd_push",
+   "gravityTo": 1.62,
+   "counter": {
+    "label": "GRAVITY",
+    "from": 9.81,
+    "to": 1.62,
+    "unit": "m/s\u00b2",
+    "dec": 2
+   },
+   "sfx": [
+    {
+     "type": "drop",
+     "at": 0.6
+    }
+   ]
+  },
+  {
+   "id": "jump",
+   "text": "A kid jumps for a frisbee, and just keeps rising. Three meters up.",
+   "label": "SECOND 3",
+   "highlight": [
+    "rising",
+    "Three"
+   ],
+   "shot": "kid_follow",
+   "event": "kidJump",
+   "counter": {
+    "label": "JUMP HEIGHT",
+    "from": 0.5,
+    "to": 3.0,
+    "unit": "m",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "rise",
+     "at": 0.5
+    }
+   ]
+  },
+  {
+   "id": "hang",
+   "text": "Hang time? Almost four seconds.",
+   "label": "SECOND 4",
+   "highlight": [
+    "four"
+   ],
+   "shot": "kid_side",
+   "counter": {
+    "label": "HANG TIME",
+    "from": 0.6,
+    "to": 3.9,
+    "unit": "s",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "tick",
+     "at": 0.9
+    }
+   ]
+  },
+  {
+   "id": "waves",
+   "text": "The waves stand taller, and crash down in slow motion.",
+   "label": "SECOND 5",
+   "highlight": [
+    "slow",
+    "motion"
+   ],
+   "shot": "wave_low",
+   "event": "bigWave",
+   "counter": {
+    "label": "WAVE HEIGHT",
+    "from": 1.2,
+    "to": 4.0,
+    "unit": "m",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "wave",
+     "at": 0.3
+    }
+   ]
+  },
+  {
+   "id": "drift",
+   "text": "Umbrellas, beach balls, loose sand. Anything light drifts off with the wind.",
+   "label": "SECOND 7",
+   "highlight": [
+    "drifts"
+   ],
+   "shot": "drift_up",
+   "event": "drift",
+   "counter": {
+    "label": "OBJECTS AIRBORNE",
+    "from": 0,
+    "to": 1840,
+    "unit": "",
+    "dec": 0
+   },
+   "sfx": [
+    {
+     "type": "wind",
+     "at": 0.0
+    }
+   ]
+  },
+  {
+   "id": "everyone",
+   "text": "Second nine. Half the beach is in the air. Honestly, who wouldn't jump?",
+   "label": "SECOND 9",
+   "highlight": [
+    "Half",
+    "jump"
+   ],
+   "shot": "crowd_air",
+   "event": "massJump",
+   "counter": {
+    "label": "PEOPLE AIRBORNE",
+    "from": 1840,
+    "to": 6200,
+    "unit": "",
+    "dec": 0
+   },
+   "sfx": [
+    {
+     "type": "rise",
+     "at": 0.2
+    }
+   ]
+  },
+  {
+   "id": "snap",
+   "text": "Second ten. Gravity snaps back.",
+   "label": "SECOND 10",
+   "highlight": [
+    "snaps"
+   ],
+   "shot": "crowd_air_hold",
+   "gravityTo": 9.81,
+   "counter": {
+    "label": "GRAVITY",
+    "from": 1.62,
+    "to": 9.81,
+    "unit": "m/s\u00b2",
+    "dec": 2
+   },
+   "sfx": [
+    {
+     "type": "snap",
+     "at": 0.75
+    }
+   ]
+  },
+  {
+   "id": "fall",
+   "text": "And everyone up there falls three meters, at the same time.",
+   "label": "IMPACT",
+   "highlight": [
+    "same",
+    "time"
+   ],
+   "shot": "fall_drop",
+   "event": "massFall",
+   "counter": {
+    "label": "IMPACT SPEED",
+    "from": 0,
+    "to": 27.6,
+    "unit": "km/h",
+    "dec": 1
+   },
+   "sfx": [
+    {
+     "type": "thuds",
+     "at": 0.75
+    }
+   ]
+  },
+  {
+   "id": "roof",
+   "text": "That's like jumping off a one story roof. Onto sand, at least.",
+   "label": "THE LANDING",
+   "highlight": [
+    "roof",
+    "sand"
+   ],
+   "shot": "aftermath",
+   "counter": {
+    "label": "IMPACT SPEED",
+    "from": 27.6,
+    "to": 27.6,
+    "unit": "km/h",
+    "dec": 1
+   },
+   "sfx": []
+  },
+  {
+   "id": "cta",
+   "text": "So, would you have jumped? Tell me where you'd be standing.",
+   "label": "YOUR MOVE",
+   "highlight": [
+    "jumped"
+   ],
+   "shot": "orbit_end",
+   "counter": null,
+   "sfx": [
+    {
+     "type": "whoosh",
+     "at": 0.0
+    }
+   ]
+  }
+ ]
+}

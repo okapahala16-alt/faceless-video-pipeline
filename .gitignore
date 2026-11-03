@@ -1,0 +1,6 @@
+node_modules/
+models/
+out/
+public/audio/
+__pycache__/
+*.pyc

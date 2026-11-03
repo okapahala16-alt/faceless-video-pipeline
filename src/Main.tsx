@@ -20,7 +20,7 @@ export const Main: React.FC<MainProps> = ({showSafeZones}) => {
   }
   return (
     <AbsoluteFill style={{backgroundColor: '#8fd3ff'}}>{/* scene picked by script "scene" */}
-      <ThreeCanvas width={width} height={height} shadows dpr={1} camera={{fov: 50, near: 0.1, far: 900, position: [20, 15, 30]}}
+      <ThreeCanvas width={width} height={height} shadows dpr={1} camera={tl.scene === 'copacabana' ? {fov: 50, near: 0.25, far: 7000, position: [20, 15, 30]} : {fov: 50, near: 0.1, far: 900, position: [20, 15, 30]}}
         gl={{antialias: true, preserveDrawingBuffer: true}}>
         {tl.scene === 'copacabana' ? <CopacabanaWorld /> : <World />}
       </ThreeCanvas>

@@ -7,7 +7,8 @@ import '@fontsource/eb-garamond/500-italic.css';
 import '@fontsource/eb-garamond/600.css';
 import '@fontsource/eb-garamond/600-italic.css';
 import {tl, FPS, beatAt, Word, clamp, ease, lerp, Beat, CaptionStyle, Hud} from './timeline';
-import {gravity, T, PEOPLE, KID_INDEX, fr} from './sim';
+import {gravity, T, PEOPLE, KID_INDEX, fr, TE} from './sim';
+import {MapDiagram} from './MapDiagram';
 
 const ACCENT = '#7CFFB2'; // legacy (Kuta) accent
 // episode accent for the new overlay features (highlights, counter label under a HUD)
@@ -261,11 +262,14 @@ export const SafeZones: React.FC = () => <AbsoluteFill style={{pointerEvents: 'n
 export const Overlay: React.FC = () => {
   const f = useCurrentFrame(); const t = f / FPS;
   const flash = UI.snapFlash && t > T.snap ? Math.exp(-(t - T.snap) * 10) * 0.85 : 0;
+  // generic flash when the Earth spins again (inert unless a beat claims earthRespin)
+  const flashR = Number.isFinite(TE.respin) && t >= TE.respin ? Math.exp(-(t - TE.respin) * 5) * 0.9 : 0;
   const end = tl.beats[tl.beats.length - 1];
   const endO = interpolate(t, [end.end - 1.1, end.end - 0.2], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return <AbsoluteFill>
     {UI.vignette && <AbsoluteFill style={{background: 'radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(5,10,20,.45) 100%)'}} />}
     {UI.vignette && <AbsoluteFill style={{background: 'linear-gradient(rgba(5,10,20,.35), rgba(0,0,0,0) 18%, rgba(0,0,0,0) 78%, rgba(5,10,20,.4))'}} />}
+    <MapDiagram t={t} beat={beatAt(t)} />
     {UI.topChip && <TopChip t={t} />}
     {UI.counter && <CounterCard t={t} />}
     {UI.gravityMeter && <GravityMeter t={t} />}
@@ -273,7 +277,7 @@ export const Overlay: React.FC = () => {
     <HudCountdown t={t} />
     <Captions t={t} />
     <EditorialCaption t={t} />
-    <AbsoluteFill style={{background: '#fff', opacity: flash}} />
+    <AbsoluteFill style={{background: '#fff', opacity: Math.max(flash, flashR)}} />
     <TitleCardLayer t={t} />
     {!tl.titleCard && IS_KUTA && <AbsoluteFill style={{background: '#0b1320', opacity: endO, justifyContent: 'center', alignItems: 'center'}}>
       <div style={{fontFamily: 'Archivo Black', fontSize: 84, color: '#fff', textAlign: 'center', lineHeight: 1.1}}>{END[0]}<br /><span style={{color: ACCENT}}>{END[1]}</span> {END[2]}</div>

@@ -27,3 +27,14 @@
 - Multilingual Whisper (base.en can't handle Indonesian)
 - Word timing is estimated from syllables, not Whisper word timestamps
 - Custom UI to repeat the process
+
+## Run on your PC (GPU)
+```
+npm install
+pip install kokoro-onnx soundfile sherpa-onnx numpy
+# download models into models/ (see above)
+npm run audio
+npm run studio   # live preview in the browser
+npm run render   # -> out/video.mp4
+```
+GL backend via env: `REMOTION_GL=angle` (Windows, default), `egl` (Linux NVIDIA), `swangle` (no GPU).

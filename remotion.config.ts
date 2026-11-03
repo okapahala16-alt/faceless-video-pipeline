@@ -1,5 +1,6 @@
 import {Config} from '@remotion/cli/config';
-Config.setChromiumOpenGlRenderer('swangle');
-Config.setBrowserExecutable('/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell');
-Config.setConcurrency(4);
+// GPU machine (Windows: "angle", Linux+NVIDIA: "egl"). No GPU: "swangle".
+Config.setChromiumOpenGlRenderer((process.env.REMOTION_GL as any) || 'angle');
+if (process.env.REMOTION_BROWSER) Config.setBrowserExecutable(process.env.REMOTION_BROWSER);
+Config.setConcurrency(Number(process.env.REMOTION_CONCURRENCY) || null);
 Config.setVideoImageFormat('jpeg');

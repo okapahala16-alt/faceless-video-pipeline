@@ -267,11 +267,16 @@
       "highlight": [
         "slams"
       ],
-      "shot": "avenue",
+      "shot": "avenida_buildings_low",
       "shotBrief": "avenida_buildings_low",
       "eventBrief": "shockFronts",
       "grade": "split",
-      "events": [],
+      "events": [
+        {
+          "name": "shockFronts",
+          "at": 0.0
+        }
+      ],
       "hud": {
         "label": "EARTH SPINS AGAIN IN",
         "from": "continue",
@@ -309,7 +314,7 @@
         "408",
         "4x"
       ],
-      "shot": "avenue",
+      "shot": "avenida_buildings_low",
       "shotBrief": "avenida_buildings_low",
       "eventBrief": "shockFronts",
       "grade": "split",
@@ -352,11 +357,16 @@
       "highlight": [
         "sea"
       ],
-      "shot": "skyline_from_sea",
+      "shot": "shoreline_high_angle",
       "shotBrief": "shoreline_high_angle",
       "eventBrief": "seaWithdraws",
       "grade": "split",
-      "events": [],
+      "events": [
+        {
+          "name": "seaWithdraws",
+          "at": 0.0
+        }
+      ],
       "hud": {
         "label": "EARTH SPINS AGAIN IN",
         "from": "continue",
@@ -404,7 +414,7 @@
       "highlight": [
         "428 metres"
       ],
-      "shot": "skyline_from_sea",
+      "shot": "shoreline_high_angle",
       "shotBrief": "shoreline_high_angle",
       "eventBrief": "seaWithdraws",
       "grade": "split",
@@ -462,7 +472,7 @@
       "highlight": [
         "two kilometres"
       ],
-      "shot": "bay_aerial",
+      "shot": "map_top_down",
       "shotBrief": "map_top_down",
       "eventBrief": "seaWithdraws",
       "grade": "split",
@@ -752,7 +762,7 @@
       "highlight": [
         "second time"
       ],
-      "shot": "skyline_from_sea",
+      "shot": "copa_wide_from_sea",
       "shotBrief": "copa_wide_from_sea",
       "eventBrief": "earthRespin",
       "grade": "normal",
@@ -801,12 +811,15 @@
       "highlight": [
         "coming back"
       ],
-      "shot": "skyline_from_sea",
+      "shot": "shoreline_high_angle_return",
       "shotBrief": "shoreline_high_angle",
       "eventBrief": "seaReturns",
       "grade": "normal",
       "events": [
-        "bigWave"
+        {
+          "name": "seaReturns",
+          "at": 0.0
+        }
       ],
       "hud": {
         "label": "EARTH IS",

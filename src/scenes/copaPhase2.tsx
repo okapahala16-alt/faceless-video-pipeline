@@ -133,9 +133,12 @@ const shockOn = (t: number) => Number.isFinite(T2.shock) && t >= T2.shock && t <
 export const ShockFronts: React.FC<{near: [number, number]; radius?: number}> = ({near, radius = 120}) => {
   const f = useCurrentFrame(), t = f / FPS;
   const list = useMemo(() => BUILDINGS.filter((b) => Math.abs(bldCenter(b).x - near[0]) < radius), [near, radius]);
-  const shellMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.17, side: THREE.DoubleSide,
+  const shellMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.25, side: THREE.DoubleSide,
     depthWrite: false, blending: THREE.AdditiveBlending, fog: true}), []);
-  const edgeMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.75, depthWrite: false, blending: THREE.AdditiveBlending}), []);
+  const outerMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.12, side: THREE.DoubleSide,
+    depthWrite: false, blending: THREE.AdditiveBlending, fog: true}), []);
+  const rimMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.85, depthWrite: false, fog: true}), []);
+  const edgeMat = useMemo(() => new THREE.MeshBasicMaterial({color: '#ffffff', transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending}), []);
   const streaks = useMemo(() => {
     const r = mulberry32(611);
     return Array.from({length: 900}, () => ({b: Math.floor(r() * 1e6), side: r() < 0.5 ? -1 : 1, h: r(), ph: r(), sp: 0.7 + r() * 0.6, len: 4 + r() * 10}));
@@ -190,7 +193,11 @@ export const ShockFronts: React.FC<{near: [number, number]; radius?: number}> = 
         <mesh material={shellMat} scale={[1, build, 1]} position={[0, b.h * 0.55 * build, 0]} renderOrder={5}>
           <cylinderGeometry args={[r, r * 1.15, b.h * 1.12, 28, 1, true, WEST_ANG - 1.15, 2.3]} />
         </mesh>
-        <mesh material={shellMat} position={[WEST.x * 1.5, b.h * 0.55 * build, WEST.z * 1.5]} scale={[flick(i), build, flick(i)]} renderOrder={5}>
+        {/* bright rim: the sharp leading edge of the shock, right in front of the windward (west) face */}
+        <mesh material={rimMat} position={[WEST.x * (r * 1.02), b.h * 0.55 * build, WEST.z * (r * 1.02)]} rotation={[0, WEST_ANG, 0]} scale={[1, build, 1]} renderOrder={6}>
+          <boxGeometry args={[r * 1.3, b.h * 1.1, 0.35]} />
+        </mesh>
+        <mesh material={outerMat} position={[WEST.x * 1.5, b.h * 0.55 * build, WEST.z * 1.5]} scale={[flick(i), build, flick(i)]} renderOrder={5}>
           <cylinderGeometry args={[r * 1.35, r * 1.6, b.h * 1.2, 28, 1, true, WEST_ANG - 0.9, 1.8]} />
         </mesh>
       </group>;

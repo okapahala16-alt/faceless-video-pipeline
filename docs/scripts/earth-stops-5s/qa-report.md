@@ -151,3 +151,27 @@ skala laut = trik kamera + kabut + bidang dasar laut; shore = peta diagram.
 | Sinkron thuds 76,2 | **LULUS + catatan** | mix.wav <150 Hz: -33,1 → -23,8 dB di 76,23 dtk; dinding tiba (u=1) 76,20 → Δ ±25 ms (<1 frame). Tapi >150 Hz tidak naik (-23,1 → -22,8; 200 Hz-3 kHz -23,5 → -24,3 dB): tak terdengar di speaker HP | sound-designer: lapisan splash/crash mid-high di 76,2 |
 | Caption/HUD/safe zone | **LULUS** | semua caption dan HUD di dalam zona aman dan terbaca; 0640 caption samar = fade-in (o 0,18), wajar |
 | Gore | **LULUS** | tidak ada tubuh/darah di semua stills |
+
+## Fase 2 Re-check (2026-11-03 ±15:40)
+
+Build: `public/timeline.json` + `public/audio/mix.wav` (15:32, md5 `d358357a1e3adc03a2347933fb076aa0`). Stills baru `out/stills_p2/element-{0640,0690,0840,0960,1110,1230,2042,2100,2250,2270,2282,2300}.png`.
+Tanpa render/build. Crop bantu: `/tmp/claude-0/-home-user/70c5c89b-04e4-567a-aca3-c8e1c3d889da/scratchpad/crop0690.png`.
+
+| Item | Hasil | Bukti | Saran → subagent |
+|---|---|---|---|
+| shockFronts | **GAGAL (sedang)** | Laut kini terlihat (piksel biru area aman 0 % → 17-31 %, tepi air + kerumunan y ±600-720). Tapi gedung turun ke sepertiga bawah, separuhnya di zona UI bawah (>1520); cangkang opacity 0,17 hampir tak terlihat di area aman (hanya busur samar di zona kanan x>940 dan y>1500, crop0690); streak diagonal di depan gedung terbaca seperti hujan, belokan di muka angin tidak terbaca. Subjek utama (front kejut) hilang | scene-builder: look point lebih dekat (±EAST×150) agar horizon ±y 450 dan gedung ±y 700-1450; cangkang ±0,25 dengan tepi/rim terang di muka barat; streak lebih tebal/terang tepat di depan cangkang |
+| seaWithdraws | **LULUS + catatan** | Pantai/gedung y ±1300-1500 (area aman), tepi air y 547 (0960) → 490 (1110) = air terlihat menjauh; matahari tidak lagi menabrak card. Catatan: tepi air di atas target 550-750 dan bagian tengahnya tertutup card DRIFT EAST (y 426-580); kamera masih naik (300+20τ) | scene-builder (opsional): pitch sedikit turun |
+| map_top_down | **GAGAL (ringan)** | Angka cocok: label "1,178 M EAST" = counter 1,178 (= 428,2×33/12); 0960 857, 1110 1,035 juga linear. Jarak card-peta 29 px. Tapi (a) bawah peta y 1189 bertabrakan dengan caption (glyph mulai y 1184, ±6 px masuk peta); (b) "SHORELINE" terpotong di tepi kiri peta (piksel putih mulai tepat x 90) | scene-builder: tinggi peta ≤560 atau caption/peta digeser ≥20 px; label ORIGINAL SHORELINE pakai textAnchor start atau geser ke kanan |
+| earthRespin | **LULUS** | 2042 flash + grade normal, 2100 debu besar. Shake kini juga rotasi (`World.tsx` look offset 0,012×ek×jarak ≈ 0,34° di puncak, ±12 px); tidak bisa dicek visual tanpa render |
+| seaReturns | **LULUS + catatan** | 2250 (75,0) dinding ±220 px dengan garis buih; 2270 (75,67) dinding y 690-1190 dengan puncak terang; 2282 memenuhi frame; 2300 laut kembali. Catatan: 2282 muka datar gelap tanpa buih; matahari di 2250-2300 menyentuh "DAY LENGTH" (masih terbaca) |
+| Audio 76,2 + regresi | **LULUS** | >150 Hz absolut 0-0,3 dtk: -11,1 / -9,9 / -15,1 dBFS (cocok); kenaikan vs 1 dtk sebelum +9,4 / +8,8 / +8,2 dB (producer +9,8/+9,3/+8,6, selisih ±0,4 dB karena jendela); 200 Hz-3 kHz +7,8 / +7,2 / +6,7. LUFS -15,72, true peak -1,05 dBTP, sample peak -1,12, 0 sampel full scale, 85,0 dtk. Limiter 2,8 dB tidak diverifikasi ulang (tanpa build) |
+| Caption/HUD/gore | **LULUS** | semua terbaca di area aman (kecuali tabrakan peta di atas); tidak ada gore |
+
+Status: 2 GAGAL tersisa (shockFronts, map). Kuta regresi menurut producer, tidak dicek ulang oleh QA.
+
+
+## Fase 2 – Re-check 2 (producer)
+Dua GAGAL dari Re-check diperbaiki dan diverifikasi oleh producer lewat stills (tanpa putaran QA ketiga, mode hemat):
+- shockFronts: titik pandang EAST×150, cangkang dalam 0,25 + tepi terang di muka barat, cangkang luar 0,12, garis aliran 0,45. Still 0690/0840: gedung di y ±330-1500, cangkang terlihat jelas, laut + tepi air di atas. LULUS (producer).
+- map_top_down: tinggi peta 535 px (bawah ±1145, tidak menyentuh caption), label ORIGINAL SHORELINE di x 14 di dalam peta. Still 1230. LULUS (producer).
+Regresi Kuta: audio md5 identik, 12 frame diff 0.

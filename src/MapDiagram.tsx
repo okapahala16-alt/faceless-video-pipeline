@@ -17,7 +17,7 @@ const shore = (u: number) => {
 const PTS = Array.from({length: 41}, (_, i) => shore(i / 40));
 // view box in km
 const X0 = -1.2, X1 = 5.4, Y0 = -0.9, Y1 = 4.4;
-const W = 820, H = 580, S = Math.min(W / (X1 - X0), H / (Y1 - Y0));
+const W = 820, H = 535, S = Math.min(W / (X1 - X0), H / (Y1 - Y0));
 const px = (x: number) => (x - X0) * S, py = (y: number) => H - (y - Y0) * S;
 const path = (pts: number[][], dx = 0) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${px(x + dx).toFixed(1)},${py(y).toFixed(1)}`).join(' ');
 
@@ -57,8 +57,8 @@ export const MapDiagram: React.FC<{t: number; beat: Beat}> = ({t, beat}) => {
       {/* labels */}
       <text x={px(PTS[0][0]) - 10} y={py(PTS[0][1]) + 34} textAnchor="end" fill="#e8eef4" style={{...mono, fontSize: 28}}>FORTE</text>
       <text x={px(PTS[40][0]) - 14} y={py(PTS[40][1]) - 14} textAnchor="end" fill="#e8eef4" style={{...mono, fontSize: 28}}>LEME</text>
-      <text x={px(shore(0.25)[0]) - 34} y={py(shore(0.25)[1])} textAnchor="end" fill="#ffffff" style={{...mono, fontSize: 26}}>ORIGINAL</text>
-      <text x={px(shore(0.25)[0]) - 34} y={py(shore(0.25)[1]) + 30} textAnchor="end" fill="#ffffff" style={{...mono, fontSize: 26}}>SHORELINE</text>
+      <text x={14} y={py(shore(0.25)[1])} textAnchor="start" fill="#ffffff" style={{...mono, fontSize: 26}}>ORIGINAL</text>
+      <text x={14} y={py(shore(0.25)[1]) + 30} textAnchor="start" fill="#ffffff" style={{...mono, fontSize: 26}}>SHORELINE</text>
       <text x={px(shore(0.75)[0] + d) + 34} y={py(shore(0.75)[1])} fill="#bfe9ff" style={{...mono, fontSize: 26}}>WATER&apos;S</text>
       <text x={px(shore(0.75)[0] + d) + 34} y={py(shore(0.75)[1]) + 30} fill="#bfe9ff" style={{...mono, fontSize: 26}}>EDGE NOW</text>
       {/* scale bar + north arrow */}

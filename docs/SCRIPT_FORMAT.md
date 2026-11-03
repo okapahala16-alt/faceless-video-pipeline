@@ -166,3 +166,17 @@ Every entry: `{"type": ..., "at": seconds into beat, "gain": 1.0, "pan": 0.0, "s
 | `riser` | `dur`, `from`, `to` (Hz), `curve`, `tone`, `fadeOut` | slow rising tension, stops before a hit |
 | `undertow` | `dur`, `intensity`, `cutoffFrom`, `cutoffTo`, `period`, `drift` | receding-sea rumble that gets darker and further away |
 | legacy | `whoosh`, `drop`, `rise`, `tick`, `wave`, `wind`, `snap`, `thuds` | the original Kuta sounds |
+
+
+## Earth-stops effects (phase 2, `src/scenes/copaPhase2.tsx`, `src/MapDiagram.tsx`)
+| Event | Effect |
+|---|---|
+| `seaWithdraws` | whole ocean drifts along EAST with the free bodies (x0.985 seabed friction); exposed slate seabed with rocks; moving water front |
+| `seaReturns` | water returns as a wall (max ~60 m, foam crest) that hits the beach 3.2 s after the event (sync your hit sfx there) |
+| `shockFronts` | shock shells + bright rim on the windward (west) faces of the front buildings, flow that bends around them, flying glass; until `earthRespin` |
+| `earthRespin` | white flash, grade back, rotational camera shake, dust clouds and debris thrown west |
+
+Shots (Copacabana): `avenida_buildings_low`, `shoreline_high_angle`, `shoreline_high_angle_return`, `copa_wide_from_sea`, `map_top_down`.
+`map_top_down` draws a north-up diagram (original shoreline dashed, today's water edge, 1 km scale). Its "M EAST" label uses the beat's counter.
+Counter `"linear": true`: value goes exactly from `from` to `to` across the beat (no easing), e.g. physics counters like DRIFT EAST.
+Fog is set per shot (`FOG` table in Copacabana.tsx) so a small world can show kilometres of seabed.

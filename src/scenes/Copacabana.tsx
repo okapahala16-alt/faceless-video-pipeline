@@ -461,7 +461,7 @@ export function copaShot(id: string, f: number): Shot {
       const H = bldCenter(HERO), tau = t - runStart(t, id), a = 0.1 * clamp(tau / 9);
       const sx = SIDE.x * Math.cos(a) - SIDE.z * Math.sin(a), sz = SIDE.x * Math.sin(a) + SIDE.z * Math.cos(a);
       const P = [H.x + sx * 120 + WEST.x * 55, 92 - 6 * clamp(tau / 9), H.z + sz * 120 + WEST.z * 55];
-      const L = [H.x + EAST.x * 260, 0, H.z + EAST.z * 260]; // far enough out that the horizon (and the sea) is in frame
+      const L = [H.x + EAST.x * 150, 0, H.z + EAST.z * 150]; // buildings mid-frame, sea and water edge behind them
       return {p0: P, p1: P, l0: L, l1: L, fov: 40, focus: [H.x, 0, H.z]};
     }
     // high above the old waterline, 45 deg down toward the south-east: seabed opening up as the sea leaves

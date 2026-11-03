@@ -1,0 +1,369 @@
+{
+  "title": "What if Earth stopped spinning for 5 seconds?",
+  "scene": "copacabana",
+  "locale": "en-US",
+  "voiceover": false,
+  "tts": null,
+  "captionStyle": "editorial",
+  "lead": 0,
+  "tail": 0,
+  "ui": { "topChip": false, "counter": true, "gravityMeter": false, "vignette": true, "snapFlash": false },
+  "titleCard": {
+    "title": "What if Earth stopped spinning for 5 seconds?",
+    "accent": "spinning",
+    "subtitle": "THE GROUND AT COPACABANA MOVES AT 1,541 KM/H",
+    "hold": 3.4,
+    "fadeOut": 0.6,
+    "endHold": 3.5,
+    "backdrop": 0.35,
+    "loopBackdrop": 0.8,
+    "color": "#F2A33A"
+  },
+  "audio": {
+    "seed": 7,
+    "ambience": "auto",
+    "ambienceGain": 1.0,
+    "drone": { "base": 700, "fade": 1.5, "music": null },
+    "droneGain": 1.0,
+    "sfxGain": 0.8,
+    "master": { "lufs": -14, "ceiling": -1.0 }
+  },
+  "beats": [
+    {
+      "id": "title",
+      "duration": 4.0,
+      "text": "",
+      "label": "",
+      "highlight": [],
+      "shot": "bay_aerial",
+      "shotBrief": "copa_establish",
+      "events": [],
+      "drone": { "intensity": 0.05 },
+      "sfx": []
+    },
+    {
+      "id": "ground",
+      "duration": 4.0,
+      "text": "You're on Copacabana Beach, Rio de Janeiro.",
+      "label": "",
+      "highlight": ["Copacabana"],
+      "shot": "crowd_sand",
+      "shotBrief": "copa_crowd_level",
+      "events": [],
+      "hud": { "label": "EARTH STOPS IN", "from": 4.0, "to": 0, "rate": 1.0, "decimals": 3 },
+      "drone": { "intensity": 0.12 },
+      "sfx": [
+        { "type": "tick", "at": 0.0 },
+        { "type": "tick", "at": 1.0 },
+        { "type": "tick", "at": 2.0 },
+        { "type": "tick", "at": 3.0 }
+      ]
+    },
+    {
+      "id": "stop",
+      "duration": 4.0,
+      "text": "The ground stops. You don't.",
+      "label": "",
+      "highlight": ["stops"],
+      "shot": "crowd_sand",
+      "shotBrief": "copa_crowd_level",
+      "eventBrief": "earthStop",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": 5.0, "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": [{ "at": 0.0, "intensity": 0.25, "cut": true }],
+      "sfx": [
+        { "type": "silence_cut", "at": 0.0, "hold": "end" },
+        { "type": "impact", "level": "medium", "at": 0.0 },
+        { "type": "shimmer", "at": 0.6, "dur": 3.0, "density": 4, "gain": 0.6 }
+      ]
+    },
+    {
+      "id": "speed",
+      "duration": 4.5,
+      "text": "You're still moving east at 1,541 km/h. Faster than sound.",
+      "label": "",
+      "highlight": ["1,541", "sound"],
+      "shot": "crowd_sand",
+      "shotBrief": "tracking_east_with_crowd",
+      "eventBrief": "freeDriftEast",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "counter": { "label": "YOUR SPEED VS. THE GROUND", "from": 0, "to": 1541, "unit": "KM/H", "dec": 0 },
+      "drone": { "intensity": 0.3 },
+      "sfx": [{ "type": "whoosh", "at": 0.3 }]
+    },
+    {
+      "id": "calm",
+      "duration": 4.5,
+      "text": "Strangely, there's no wind. The air is still moving with you.",
+      "label": "",
+      "highlight": ["no wind"],
+      "shot": "crowd_sand",
+      "shotBrief": "tracking_east_close",
+      "eventBrief": "visibleAirCoMoving",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": { "intensity": 0.3 },
+      "sfx": [
+        { "type": "shimmer", "at": 0.0, "dur": 4.5, "density": 5, "gain": 0.7 },
+        { "type": "impact", "level": "small", "at": 3.5, "gain": 0.5, "note": "real-second pulse (abs 20.0)" }
+      ]
+    },
+    {
+      "id": "wall",
+      "duration": 4.5,
+      "text": "Until it slams into everything that stopped.",
+      "label": "",
+      "highlight": ["slams"],
+      "shot": "avenue",
+      "shotBrief": "avenida_buildings_low",
+      "eventBrief": "shockFronts",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": { "intensity": 0.45 },
+      "sfx": [
+        { "type": "impact", "level": "medium", "at": 0.0 },
+        { "type": "wind", "at": 0.1, "gain": 0.8 }
+      ]
+    },
+    {
+      "id": "record",
+      "duration": 4.5,
+      "text": "The strongest gust ever recorded: 408 km/h. This is almost 4x faster.",
+      "label": "",
+      "highlight": ["408", "4x"],
+      "shot": "avenue",
+      "shotBrief": "avenida_buildings_low",
+      "eventBrief": "shockFronts",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "counter": { "label": "WIND: RECORD GUST TO NOW", "from": 408, "to": 1541, "unit": "KM/H", "dec": 0 },
+      "drone": { "intensity": 0.45 },
+      "sfx": [
+        { "type": "wind", "at": 0.0, "gain": 0.9 },
+        { "type": "tick", "at": 0.4 }
+      ]
+    },
+    {
+      "id": "sea",
+      "duration": 4.5,
+      "text": "The Atlantic keeps moving too. The sea pulls away from the beach.",
+      "label": "",
+      "highlight": ["sea"],
+      "shot": "skyline_from_sea",
+      "shotBrief": "shoreline_high_angle",
+      "eventBrief": "seaWithdraws",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "counter": { "label": "DRIFT EAST", "from": 785, "to": 946, "unit": "M", "dec": 0 },
+      "drone": { "intensity": 0.5 },
+      "sfx": [
+        { "type": "swell", "at": 0.3, "dur": 2.0 },
+        { "type": "wave", "at": 0.3 },
+        { "type": "impact", "level": "small", "at": 2.0, "gain": 0.5, "note": "real-second pulse (abs 32.0)" }
+      ]
+    },
+    {
+      "id": "meters",
+      "duration": 4.5,
+      "text": "Every second, the sea and the crowd drift 428 metres east.",
+      "label": "",
+      "highlight": ["428 metres"],
+      "shot": "skyline_from_sea",
+      "shotBrief": "shoreline_high_angle",
+      "eventBrief": "seaWithdraws",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "counter": { "label": "DRIFT EAST", "from": 946, "to": 1106, "unit": "M", "dec": 0 },
+      "drone": { "intensity": 0.5 },
+      "sfx": []
+    },
+    {
+      "id": "shore",
+      "duration": 4.5,
+      "text": "By the end, the water's edge will be two kilometres out.",
+      "label": "",
+      "highlight": ["two kilometres"],
+      "shot": "bay_aerial",
+      "shotBrief": "map_top_down",
+      "eventBrief": "seaWithdraws",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "counter": { "label": "DRIFT EAST", "from": 1106, "to": 1267, "unit": "M", "dec": 0 },
+      "drone": { "intensity": 0.55 },
+      "sfx": [
+        { "type": "sweep_up", "at": 2.5, "dur": 2.0, "from": 120, "to": 1800 },
+        { "type": "sweep_down", "at": 2.5, "dur": 2.0, "from": 900, "to": 40 }
+      ]
+    },
+    {
+      "id": "planet",
+      "duration": 5.0,
+      "text": "And it's happening everywhere on Earth at once.",
+      "label": "",
+      "highlight": ["everywhere"],
+      "shot": "bay_aerial",
+      "shotBrief": "pullback_to_globe",
+      "eventBrief": "globeWindBands",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": { "intensity": 0.75, "at": 0.5, "fade": 0.3 },
+      "sfx": [
+        { "type": "impact", "level": "huge", "at": 0.5, "note": "lands on real-second 3 (abs 44.0)" },
+        { "type": "noise_wall", "at": 0.5, "dur": 4.6, "intensity": 0.7, "fadeIn": 0.3, "fadeOut": 0.3 }
+      ]
+    },
+    {
+      "id": "air",
+      "duration": 4.5,
+      "text": "Five quadrillion tonnes of air, most of it moving faster than sound.",
+      "label": "",
+      "highlight": ["quadrillion"],
+      "shot": "bay_aerial",
+      "shotBrief": "globe_orbit",
+      "eventBrief": "globeWindBands",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": { "intensity": 0.8 },
+      "sfx": [
+        { "type": "noise_wall", "at": 0.0, "dur": 4.6, "intensity": 0.85, "fadeIn": 0.2, "fadeOut": 0.3 },
+        { "type": "swell", "at": 0.5, "dur": 1.5 },
+        { "type": "swell", "at": 3.0, "dur": 1.5 }
+      ]
+    },
+    {
+      "id": "poles",
+      "duration": 4.5,
+      "text": "At the equator: 1,670 km/h. At the poles: zero.",
+      "label": "",
+      "highlight": ["1,670", "zero"],
+      "shot": "bay_aerial",
+      "shotBrief": "globe_tilt_to_pole",
+      "eventBrief": "globeSpeedGradient",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": { "intensity": 0.8 },
+      "sfx": [
+        { "type": "noise_wall", "at": 0.0, "dur": 4.6, "intensity": 0.85, "fadeIn": 0.2, "fadeOut": 0.4 },
+        { "type": "impact", "level": "small", "at": 3.0, "gain": 0.5, "note": "real-second pulse (abs 56.0)" }
+      ]
+    },
+    {
+      "id": "plane",
+      "duration": 5.0,
+      "text": "The calmest place on Earth right now? A plane at 35,000 feet.",
+      "label": "",
+      "highlight": ["plane"],
+      "shot": "skyline_from_sea",
+      "shotBrief": "airliner_above_clouds",
+      "eventBrief": "airlinerCruising",
+      "grade": "normal",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3 },
+      "drone": { "intensity": 0.4, "fade": 0.6 },
+      "sfx": [
+        { "type": "noise_wall", "at": 0.0, "dur": 5.0, "intensity": 0.15, "hi": 300, "color": "brown", "fadeIn": 0.3, "fadeOut": 0.3 },
+        { "type": "shimmer", "at": 0.3, "dur": 4.0, "density": 4, "gain": 0.6 }
+      ]
+    },
+    {
+      "id": "timer",
+      "duration": 5.5,
+      "text": "Then the five seconds run out.",
+      "label": "",
+      "highlight": ["run out"],
+      "shot": "crowd_sand",
+      "shotBrief": "copa_crowd_level",
+      "eventBrief": "freeDriftEast",
+      "grade": "split",
+      "events": [],
+      "hud": { "label": "EARTH SPINS AGAIN IN", "from": "continue", "to": 0, "rate": 0.0833333, "sub": "TIME SLOWED DOWN 12x", "decimals": 3, "end": "SPINNING AGAIN" },
+      "drone": { "intensity": 0.6 },
+      "sfx": [
+        { "type": "noise_wall", "at": 0.0, "dur": 5.5, "intensity": 0.5, "fadeIn": 2.0, "fadeOut": 0.2 },
+        { "type": "tick", "at": 2.5 },
+        { "type": "tick", "at": 3.5 },
+        { "type": "tick", "at": 4.5 },
+        { "type": "sweep_up", "at": 2.5, "dur": 3.0, "from": 100, "to": 2400 },
+        { "type": "sweep_down", "at": 2.5, "dur": 3.0, "from": 1000, "to": 35 }
+      ]
+    },
+    {
+      "id": "spin",
+      "duration": 5.0,
+      "text": "Earth spins again. Everything that had stopped is hit a second time.",
+      "label": "",
+      "highlight": ["second time"],
+      "shot": "skyline_from_sea",
+      "shotBrief": "copa_wide_from_sea",
+      "eventBrief": "earthRespin",
+      "grade": "normal",
+      "events": [],
+      "hud": { "label": "EARTH", "from": 0, "to": 0, "rate": 0, "sub": "DAY LENGTH +5 S", "end": "SPINNING AGAIN" },
+      "drone": [{ "at": 0.0, "intensity": 0.9, "cut": true }],
+      "sfx": [
+        { "type": "impact", "level": "huge", "at": 0.0 },
+        { "type": "noise_wall", "at": 0.0, "dur": 5.0, "intensity": 1.0, "fadeIn": 0.05, "fadeOut": 4.5 }
+      ]
+    },
+    {
+      "id": "return",
+      "duration": 4.0,
+      "text": "And the sea that left is coming back.",
+      "label": "",
+      "highlight": ["coming back"],
+      "shot": "skyline_from_sea",
+      "shotBrief": "shoreline_high_angle",
+      "eventBrief": "seaReturns",
+      "grade": "normal",
+      "events": ["bigWave"],
+      "hud": { "label": "EARTH", "from": 0, "to": 0, "rate": 0, "sub": "DAY LENGTH +5 S", "end": "SPINNING AGAIN" },
+      "drone": { "intensity": 0.6 },
+      "sfx": [
+        { "type": "swell", "at": 0.2, "dur": 3.0 },
+        { "type": "thuds", "at": 3.2 }
+      ]
+    },
+    {
+      "id": "sunrise",
+      "duration": 4.5,
+      "text": "Tomorrow, the sun will rise five seconds late.",
+      "label": "",
+      "highlight": ["five seconds late"],
+      "shot": "skyline_from_sea",
+      "shotBrief": "horizon_dawn",
+      "eventBrief": "none",
+      "grade": "normal",
+      "events": [],
+      "hud": { "label": "EARTH", "from": 0, "to": 0, "rate": 0, "sub": "DAY LENGTH +5 S", "end": "SPINNING AGAIN" },
+      "drone": [{ "at": 0.0, "intensity": 0.2, "cut": true }],
+      "sfx": [
+        { "type": "silence_cut", "at": 0.0, "hold": "end" },
+        { "type": "shimmer", "at": 1.0, "dur": 2.5, "density": 2, "gain": 0.4 }
+      ]
+    },
+    {
+      "id": "end",
+      "duration": 3.5,
+      "text": "",
+      "label": "",
+      "highlight": [],
+      "shot": "bay_aerial",
+      "shotBrief": "endcard (titleCard endHold covers this beat)",
+      "events": [],
+      "drone": { "intensity": 0.0, "fade": 3.0 },
+      "sfx": []
+    }
+  ]
+}

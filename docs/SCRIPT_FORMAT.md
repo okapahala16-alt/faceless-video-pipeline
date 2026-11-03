@@ -18,6 +18,7 @@ Everything new is optional. Leave a field out and you get the old behaviour.
 |---|---|---|---|
 | `title` | string | required | |
 | `scene` | `"kuta"` or `"copacabana"` | `"kuta"` | which 3D world to render (see Scenes below) |
+| `lighting` | `"day"` or `"golden"` | `"day"` | Copacabana only: `golden` = late-afternoon sun ~13° up in the true west (behind the towers), warm sky/fog, long shadows |
 | `locale` | string | `"en-US"` | number formatting (`id-ID` uses a decimal comma) |
 | `voiceover` | bool | `true` | `false` = no TTS at all, beats use `duration` |
 | `tts` | object or `null` | kokoro | `null` = no voice-over. Engines: see README |

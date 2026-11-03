@@ -197,3 +197,30 @@ Status Fase 3: 1 GAGAL ringan (Rio).
 
 ## Fase 3 – Re-check (producer)
 GAGAL ringan "Rio tidak terbaca" diperbaiki: label "RIO · YOU ARE HERE" (amber, latar gelap, y < 1080) + dua cincin pulsa di 44,0-46,6 (still p3e 1332, 1360). Catatan ikut diperbaiki: garis angin memudar ke arah tepi globe; pesawat tidak lagi dolly-in (hidung + ekor di area aman), piringan abu dihapus, garis jendela lebih halus (1760, 1850); laut fajar diperlebar (tidak ada baji di horizon, 2400); subteks label 26 px. Diverifikasi producer lewat stills. Regresi Kuta identik.
+
+## Fase 4 (review 2026-11-03 ±16:05)
+
+Stills: `out/stills_p4/element-{0000,0060,0180,0300,0428,0560,0690,0960,1950,2100,2270,2549}.png`. Kode dibaca: `src/scenes/Copacabana.tsx` (Landmarks, GOLDEN, BUILDINGS). Tanpa render/build.
+Konversi koordinat untuk cek arah: EAST = (-0,6, -0,8), NORTH = (-0,8, 0,6) di bidang (x, z); bearing = atan2(p·E, p·N).
+
+| Item | Hasil | Bukti | Saran → subagent |
+|---|---|---|---|
+| Golden hour, bukan senja gelap | **LULUS** | 0060/0180/0560/1950: horizon oranye, glow ke arah matahari, cahaya hangat; luma rata-rata area aman 84-104 (bukan malam). 0960: bayangan gedung panjang jatuh ke timur di dasar laut (matahari di barat, benar). Catatan: langit atas 0060 cukup gelap (navy) |
+| Kontras caption/HUD/counter | **LULUS** | judul 0060 ±5,6:1 di atas langit oranye; caption 0180 14,7, 0690 10,0, 0960 17,3, 2270 16,9; counter 0428 15,6 (perkiraan persentil) |
+| Wajah/kerumunan | **LULUS** | 0180/0300/1950: wajah dan warna baju terbaca; 0560 wajah subjek agak teduh (backlit) tapi terbaca |
+| Pedra do Leme (timur laut) | **GAGAL (ringan)** | posisi benar (x -180 = timur laut, bearing 43°). Tapi **topi hijau tidak muncul**: batu center y 8, skala 40×0,6 → puncak y 32; topi center y 20, skala 14 → puncak y 28,4, dan skala x/z lebih kecil (38/50 vs 52/70), jadi topi sepenuhnya di dalam batu. 0060/0180/0300: Leme terlihat batu cokelat/abu polos | scene-builder: naikkan topi ke y ±30-32 atau perbesar skalanya supaya menonjol |
+| Sugarloaf samar di utara | **GAGAL (ringan)** | `Dome` (-430,-175) → bearing ±59°, Leme 43°: Sugarloaf ada di **kanan/seaward** Leme. Kenyataannya dari tengah pantai Sugarloaf ±49°, Leme ±70° (Sugarloaf di kiri/utara Leme). Di 0180/0300 siluetnya di zona UI kanan (x >940), di atas laut | scene-builder: geser ke sisi darat Leme (mis. z ±0..+40 pada x -430 → bearing ±34-42°), di area aman |
+| Forte barat daya | **LULUS (kode)** | tanjung + Forte di x +180 = barat daya; tidak terlihat di stills yang ada (tidak ada shot ke arah barat daya) |
+| Gedung 12-20 lantai | **LULUS** | `floors = 12 + floor(r·9)` → 12-20, tinggi 3,1 m/lantai |
+| Regresi grade/jejak/front/laut | **LULUS** | 0300/0428/1950: benda tertanam slate, orang berwarna, jejak amber. 0690: cangkang kejut kini jelas di area aman (y 800-1500), laut + tepi air di latar (memperbaiki GAGAL shockFronts re-check Fase 2). 0960 laut surut, 2270 dinding kembali dengan puncak terang, 2100 debu besar |
+| Loop 0 vs 2549 | **LULUS** | beda piksel >8 level 2,1 %, maks 17; judul identik |
+| Logo/merek | **LULUS** | tidak ada |
+
+Status Fase 4: 2 GAGAL ringan (topi hijau Leme tidak terlihat, posisi Sugarloaf). Regresi Kuta menurut producer, tidak dicek ulang QA.
+
+
+## Fase 4 – Re-check (producer)
+- Topi hijau Pedra do Leme dinaikkan (y 29, skala 44×13×58): terlihat di 0180 (still p4f). LULUS (producer).
+- Sugarloaf + Urca dipindah ke sisi darat Leme (x -455/-412, z +10/+4): bearing ~36° dari tengah pantai, di kiri Leme seperti kenyataan (Sugarloaf ~48°, Leme ~66°). Siluet samar di 0060, di luar zona UI kanan. LULUS (producer).
+- Forte de Copacabana ada di tanjung barat daya tapi tidak masuk shot mana pun di episode ini (tidak ada kamera menghadap barat daya). Catatan, bukan GAGAL.
+Regresi Kuta: identik (12 frame diff 0, audio md5 sama).

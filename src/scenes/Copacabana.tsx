@@ -210,13 +210,14 @@ const Hills: React.FC = () => {
     {/* headland at the left end of the bay, and the domes beyond it */}
     {/* Pedra do Leme (north-east end): bare rock with a green cap */}
     <mesh position={[-180, 8, -20]} scale={[52, 40, 70]} material={ME('#6b6a60')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
-    <mesh position={[-184, 20, -18]} scale={[38, 14, 50]} material={ME('#3f7d3a')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
+    <mesh position={[-182, 29, -19]} scale={[44, 13, 58]} material={ME('#3f7d3a')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
     {/* south-west headland with the low fort on top */}
     <mesh position={[180, 6, -20]} scale={[44, 30, 60]} material={ME('#5f6d55')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
     <Forte x={182} z={-22} y={19} />
-    {/* Sugarloaf + Urca: small, far, a hazy silhouette beyond Leme */}
-    <Dome x={-430} z={-175} h={88} r={22} lean={0.08} />
-    <Dome x={-388} z={-148} h={42} r={20} />
+    {/* Sugarloaf + Urca: small, far, a hazy silhouette. From mid-beach the real Sugarloaf is at bearing ~48 deg,
+        Pedra do Leme ~66 deg, so it sits to the LEFT (land side) of Leme, not out over the sea */}
+    <Dome x={-455} z={10} h={88} r={22} lean={0.08} />
+    <Dome x={-412} z={4} h={42} r={20} />
   </group>;
 };
 

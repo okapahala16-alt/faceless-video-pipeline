@@ -523,11 +523,16 @@
       "highlight": [
         "everywhere"
       ],
-      "shot": "bay_aerial",
+      "shot": "pullback_to_globe",
       "shotBrief": "pullback_to_globe",
       "eventBrief": "globeWindBands",
       "grade": "split",
-      "events": [],
+      "events": [
+        {
+          "name": "globeWindBands",
+          "at": 0.5
+        }
+      ],
       "hud": {
         "label": "EARTH SPINS AGAIN IN",
         "from": "continue",
@@ -567,7 +572,7 @@
       "highlight": [
         "quadrillion"
       ],
-      "shot": "bay_aerial",
+      "shot": "globe_orbit",
       "shotBrief": "globe_orbit",
       "eventBrief": "globeWindBands",
       "grade": "split",
@@ -613,11 +618,16 @@
         "1,670",
         "zero"
       ],
-      "shot": "bay_aerial",
+      "shot": "globe_tilt_to_pole",
       "shotBrief": "globe_tilt_to_pole",
       "eventBrief": "globeSpeedGradient",
       "grade": "split",
-      "events": [],
+      "events": [
+        {
+          "name": "globeSpeedGradient",
+          "at": 0.0
+        }
+      ],
       "hud": {
         "label": "EARTH SPINS AGAIN IN",
         "from": "continue",
@@ -655,11 +665,16 @@
       "highlight": [
         "plane"
       ],
-      "shot": "skyline_from_sea",
+      "shot": "airliner_above_clouds",
       "shotBrief": "airliner_above_clouds",
       "eventBrief": "airlinerCruising",
       "grade": "normal",
-      "events": [],
+      "events": [
+        {
+          "name": "airlinerCruising",
+          "at": 0.0
+        }
+      ],
       "hud": {
         "label": "EARTH SPINS AGAIN IN",
         "from": "continue",
@@ -876,7 +891,7 @@
       "highlight": [
         "five seconds late"
       ],
-      "shot": "skyline_from_sea",
+      "shot": "horizon_dawn",
       "shotBrief": "horizon_dawn",
       "eventBrief": "none",
       "grade": "normal",

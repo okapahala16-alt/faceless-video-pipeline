@@ -3,6 +3,7 @@ import {AbsoluteFill, Audio, staticFile, useVideoConfig} from 'remotion';
 import {ThreeCanvas} from '@remotion/three';
 import {World} from './World';
 import {CopacabanaWorld} from './scenes/Copacabana';
+import {CopaOverlay} from './scenes/CopaOverlay';
 import {Overlay, SafeZones} from './Overlay';
 import {SfxDemo} from './SfxDemo';
 import {tl} from './timeline';
@@ -24,6 +25,7 @@ export const Main: React.FC<MainProps> = ({showSafeZones}) => {
         gl={{antialias: true, preserveDrawingBuffer: true}}>
         {tl.scene === 'copacabana' ? <CopacabanaWorld /> : <World />}
       </ThreeCanvas>
+      {tl.scene === 'copacabana' && <CopaOverlay />}
       <Overlay />
       {showSafeZones && <SafeZones />}
       <Audio src={staticFile('audio/mix.wav')} />

@@ -12,6 +12,7 @@ import {CameraRig, Sky, Clouds, Sea, Palm, PersonMesh, Objects, SandBurst, Frisb
 import {ME, anchorify, gradeAt, GRADE_U, hasGrade} from '../grade';
 import {Trails, AirFlow, TrailBody} from '../FreeFx';
 import {OceanShift, Seabed, ShockFronts, RespinDust, oceanMoves} from './copaPhase2';
+import {miniShot, miniModeAt, MiniScene} from './copaPhase3';
 
 // ---------- layout ----------
 const PROM_Z0 = 30, PROM_Z1 = 37;      // promenade (wave pavement)
@@ -418,6 +419,8 @@ function crowdSpot(t0: number): [number, number] {
 }
 export function copaShot(id: string, f: number): Shot {
   const t = f / FPS;
+  const ms = miniShot(id, f);
+  if (ms) return ms;
   switch (id) {
     case 'bay_aerial': return {p0: [125, 45, -12], p1: [110, 41, -14], l0: [-180, 22, 10], l1: [-185, 24, 8]};
     case 'promenade_low': return {p0: [16, 1.9, 31.0], p1: [8, 1.9, 31.0], l0: [-70, 3, 22], l1: [-80, 4, 20]};
@@ -534,6 +537,8 @@ export const CopacabanaWorld: React.FC = () => {
       sun.current.target.updateMatrixWorld();
     }
   }, [f, focus, shotNow]);
+  const mini = miniModeAt(f);
+  if (mini) return <><CameraRig shots={copaShot} /><MiniScene mode={mini} /></>;
   return <>
     <CameraRig shots={copaShot} />
     {/* sky dome and sun sit around the camera, so a camera that drifts kilometres still sees the sky */}

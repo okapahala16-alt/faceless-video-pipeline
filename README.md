@@ -1,4 +1,8 @@
-# video-test: faceless 3D short pipeline (prototype)
+# Faceless 3D "What if..." pipeline
+
+See `CLAUDE.md` for architecture and commands, `docs/SCRIPT_FORMAT.md` for every JSON field.
+
+## Original prototype
 
 "What if Earth's gravity dropped to Moon level for 10 seconds?" Kuta Beach, 9:16, ~52s.
 
@@ -35,7 +39,7 @@
 ## Run on your PC (GPU)
 ```
 npm install
-pip install kokoro-onnx soundfile sherpa-onnx numpy
+pip install kokoro-onnx soundfile sherpa-onnx numpy scipy
 # download models into models/ (see above)
 npm run audio
 npm run studio   # live preview in the browser

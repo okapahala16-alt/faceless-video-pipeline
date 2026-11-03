@@ -9,13 +9,20 @@
     "audio": "python pipeline/build_audio.py pipeline/script.json public",
     "qa": "python pipeline/qa_transcript.py pipeline/script.json public/audio/vo.wav",
     "audio:id": "python pipeline/build_audio.py pipeline/script.id.json public",
-    "voice": "python pipeline/record_voice.py"
+    "voice": "python pipeline/record_voice.py",
+    "build": "python pipeline/build_audio.py",
+    "stills": "node scripts/stills.mjs",
+    "stills:guides": "node scripts/stills.mjs --guides",
+    "sfx-demo": "python pipeline/build_audio.py docs/sfx-demo.json public out/sfx-demo.wav && remotion render src/index.ts Main out/sfx-demo.mp4 --codec=h264 --crf=20",
+    "test-novo": "python pipeline/build_audio.py docs/scripts/test-novo.json public && remotion render src/index.ts Main out/test-novo.mp4 --codec=h264 --crf=20"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@fontsource/archivo-black": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/eb-garamond": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/space-mono": "^5.3.0",
     "@react-three/fiber": "^8.17.10",

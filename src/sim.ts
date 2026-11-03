@@ -2,15 +2,50 @@
 import {tl, FPS, beatById, mulberry32, clamp, lerp} from './timeline';
 
 export const N = Math.ceil(tl.duration * FPS) + 2;
+// Scene events are anchored to beats. A beat claims an event with "events": ["snap"] or
+// [{"name": "snap", "at": 0.8}] (seconds into the beat). Legacy Kuta scripts have no
+// "events" list; their beat ids (drop, jump, ...) are used instead, with the original offsets.
+const INF = Number.POSITIVE_INFINITY;
+type Ev = string | {name: string; at?: number};
+const evList = (b: (typeof tl.beats)[number]): Ev[] => {
+  const raw = (b as unknown as {events?: Ev[]; event?: string}).events;
+  return raw ?? [];
+};
+function anchor(name: string, legacyId: string, legacyOffset: number): {beat?: (typeof tl.beats)[number]; t: number} {
+  for (const b of tl.beats) {
+    for (const e of evList(b)) {
+      const n = typeof e === 'string' ? e : e.name;
+      if (n === name) return {beat: b, t: b.start + (typeof e === 'string' || e.at === undefined ? legacyOffset : e.at)};
+    }
+  }
+  const b = beatById(legacyId);
+  return b ? {beat: b, t: b.start + legacyOffset} : {t: INF};
+}
+const A = {
+  drop: anchor('gravityDrop', 'drop', 0.6),
+  snap: anchor('snap', 'snap', 0.75),
+  fall: anchor('massFall', 'fall', 0.55),
+  kid: anchor('kidJump', 'jump', 0.35),
+  wave: anchor('bigWave', 'waves', 0.2),
+  drift: anchor('drift', 'drift', 0.15),
+  mass: anchor('massJump', 'everyone', 0.1),
+};
+const kidBeatStart = A.kid.beat ? A.kid.beat.start : INF;
 export const T = {
-  drop: beatById('drop').start + 0.6,
-  snap: beatById('snap').start + 0.75,
-  fall: beatById('fall').start + 0.55,
-  kidJump: beatById('jump').start + 0.35,
-  frisbee: beatById('jump').start - 0.9,
-  wave: beatById('waves').start + 0.2,
-  drift: beatById('drift').start + 0.15,
-  mass0: beatById('everyone').start + 0.1,
+  drop: A.drop.t,
+  snap: A.snap.t,
+  fall: A.fall.t,
+  kidJump: A.kid.t,
+  frisbee: kidBeatStart - 0.9,
+  wave: A.wave.t,
+  drift: A.drift.t,
+  mass0: A.mass.t,
+};
+// hop windows (legacy: jump.start, waves.start, drift.end)
+const W = {
+  hopEnd: kidBeatStart,
+  waveStart: A.wave.beat ? A.wave.beat.start : INF,
+  driftEnd: A.drift.beat ? A.drift.beat.end : INF,
 };
 const G = 9.81, GM = 1.62;
 // world-time rate: slow-mo while gravity is low, near-freeze between "snap" and the fall
@@ -55,9 +90,11 @@ export const KID_INDEX = people.length - 1;
 const jumps: number[][] = people.map(() => []);
 people.forEach((p, i) => {
   if (p.kid) { jumps[i].push(T.kidJump); return; }
-  if (rnd() < 0.18) jumps[i].push(lerp(T.drop + 1.2, beatById('jump').start - 0.3, rnd()));
-  if (rnd() < 0.22) jumps[i].push(lerp(beatById('waves').start, beatById('drift').end - 1, rnd()));
+  if (rnd() < 0.18) jumps[i].push(lerp(T.drop + 1.2, W.hopEnd - 0.3, rnd()));
+  if (rnd() < 0.22) jumps[i].push(lerp(W.waveStart, W.driftEnd - 1, rnd()));
   if (rnd() < 0.62) jumps[i].push(lerp(T.mass0, T.snap - 0.5, Math.pow(rnd(), 0.8)));
+  // drop jumps whose anchor event is missing in this script (keeps rnd() order intact)
+  jumps[i] = jumps[i].filter((j) => Number.isFinite(j)).sort((a, b) => a - b);
 });
 
 // integrate
@@ -104,6 +141,7 @@ export function objPose(o: Obj, f: number) {
 
 // frisbee: thrown before the kid jumps, kid catches it at apex
 export function frisbeePose(f: number) {
+  if (!Number.isFinite(T.frisbee) || !Number.isFinite(T.kidJump)) return null;
   const s = simT[f], s0 = simT[fr(T.frisbee)], kid = PEOPLE[KID_INDEX];
   const apexS = simT[fr(T.kidJump)] + Math.sqrt(2 * G * 0.5) / GM; // sim time of kid apex
   if (s < s0) return null;
@@ -114,6 +152,7 @@ export function frisbeePose(f: number) {
 
 // big wave crest position/height
 export function wave(f: number) {
+  if (!Number.isFinite(T.wave)) return {zc: -40, amp: 0};
   const s = simT[f], s0 = simT[fr(T.wave)];
   const q = s - s0;
   if (q < 0) return {zc: -40, amp: 0};

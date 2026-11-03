@@ -3,7 +3,10 @@ import {AbsoluteFill, useCurrentFrame, interpolate} from 'remotion';
 import '@fontsource/archivo-black/400.css';
 import '@fontsource/space-mono/700.css';
 import '@fontsource/inter/600.css';
-import {tl, FPS, beatAt, Word, clamp, ease, lerp} from './timeline';
+import '@fontsource/eb-garamond/500-italic.css';
+import '@fontsource/eb-garamond/600.css';
+import '@fontsource/eb-garamond/600-italic.css';
+import {tl, FPS, beatAt, Word, clamp, ease, lerp, Beat, CaptionStyle, Hud} from './timeline';
 import {gravity, T, PEOPLE, KID_INDEX, fr} from './sim';
 
 const ACCENT = '#7CFFB2';
@@ -14,7 +17,10 @@ const norm = (w: string) => w.replace(/[^\p{L}\p{N}']/gu, '').toLowerCase();
 // group words into short caption chunks (max 3 words, break after punctuation)
 type Chunk = {words: (Word & {hl: boolean})[]; s: number; e: number};
 const CHUNKS: Chunk[] = [];
+const styleOf = (b: Beat): CaptionStyle => b.captionStyle ?? tl.captionStyle ?? 'karaoke';
+const UI = {topChip: true, counter: true, gravityMeter: true, vignette: true, snapFlash: true, ...(tl.ui ?? {})};
 for (const b of tl.beats) {
+  if (styleOf(b) !== 'karaoke') continue;
   let cur: Chunk | null = null;
   const hl = new Set(b.highlight.map(norm));
   for (const w of b.words) {
@@ -72,6 +78,7 @@ const GravityMeter: React.FC<{t: number}> = ({t}) => {
 
 const TopChip: React.FC<{t: number}> = ({t}) => {
   const b = beatAt(t);
+  if (!b.label) return null;
   const enter = ease(clamp((t - b.start) / 0.2));
   return <div style={{position: 'absolute', top: 96, left: 0, right: 0, display: 'flex', justifyContent: 'center'}}>
     <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 30, letterSpacing: 6, color: '#0b1320', background: ACCENT, padding: '10px 26px', borderRadius: 999,
@@ -87,22 +94,137 @@ const Title: React.FC<{t: number}> = ({t}) => {
   </div>;
 };
 
+// ---------- editorial caption: one serif italic sentence per beat, fade in/out ----------
+const EditorialCaption: React.FC<{t: number}> = ({t}) => {
+  const b = beatAt(t);
+  if (styleOf(b) !== 'editorial') return null;
+  const text = b.caption ?? b.text;
+  if (!text) return null;
+  const tc = tl.titleCard;
+  const titleGone = tc ? (tc.hold ?? 2.5) + (tc.fadeOut ?? 0.6) : 0;
+  const endCardAt = tc ? tl.duration - (tc.endHold ?? 2.0) : Infinity;
+  const a = Math.max(b.start + 0.25, titleGone), z = Math.min(b.end - 0.2, endCardAt);
+  if (z - a < 0.6) return null;
+  const o = Math.min(clamp((t - a) / 0.45), clamp((z - t) / 0.4));
+  if (o <= 0) return null;
+  return <div style={{position: 'absolute', left: 140, right: 140, top: 1150, display: 'flex', justifyContent: 'center', opacity: o,
+    transform: `translateY(${(1 - o) * 10}px)`}}>
+    <div style={{position: 'relative', padding: '18px 34px', textAlign: 'center'}}>
+      <div style={{position: 'absolute', inset: -30, background: 'radial-gradient(ellipse at center, rgba(5,10,20,.62) 0%, rgba(5,10,20,.38) 45%, rgba(5,10,20,0) 72%)'}} />
+      <div style={{position: 'relative', fontFamily: 'EB Garamond', fontStyle: 'italic', fontWeight: 500, fontSize: 58, lineHeight: 1.22, color: '#fff',
+        textShadow: '0 2px 14px rgba(0,0,0,.75), 0 0 2px rgba(0,0,0,.6)'}}>{text}</div>
+    </div>
+  </div>;
+};
+
+// ---------- HUD countdown ----------
+type HudState = {label: string; sub: string; v: number; done: boolean; end?: string; dec: number};
+const hudStart = new Map<string, number>();
+{ // resolve "from": "continue" by walking beats in order
+  let last = 0;
+  for (const b of tl.beats) {
+    const h = b.hud;
+    if (!h) continue;
+    const from = h.from === 'continue' ? last : h.from;
+    hudStart.set(b.id, from);
+    const to = h.to ?? 0, dir = Math.sign(to - from) || -1, rate = h.rate ?? 1;
+    const raw = from + dir * rate * (b.end - b.start);
+    last = dir < 0 ? Math.max(to, raw) : Math.min(to, raw);
+  }
+}
+function hudAt(b: Beat, h: Hud, t: number): HudState {
+  const from = hudStart.get(b.id) ?? 0, to = h.to ?? 0, rate = h.rate ?? 1;
+  const dir = Math.sign(to - from) || -1;
+  const raw = from + dir * rate * (t - b.start);
+  const v = dir < 0 ? Math.max(to, raw) : Math.min(to, raw);
+  return {label: h.label ?? '', sub: h.sub ?? '', v, done: v === to && t > b.start, end: h.end, dec: h.decimals ?? 3};
+}
+export const fmtClock = (v: number, dec = 3) => {
+  v = Math.max(0, v);
+  const m = Math.floor(v / 60), s = v - m * 60;
+  const whole = Math.floor(s), frac = Math.floor((s - whole) * Math.pow(10, dec));
+  return `${m}:${String(whole).padStart(2, '0')}${dec > 0 ? '.' + String(frac).padStart(dec, '0') : ''}`;
+};
+const HudCountdown: React.FC<{t: number}> = ({t}) => {
+  const b = beatAt(t);
+  if (!b.hud) return null;
+  const st = hudAt(b, b.hud, t);
+  const showEnd = st.done && !!st.end;
+  const sh = '0 2px 14px rgba(0,0,0,.6), 0 0 3px rgba(0,0,0,.5)';
+  const vis = 1 - titleOpacity(t);
+  if (vis <= 0.01) return null;
+  return <div style={{position: 'absolute', top: 190, left: 140, right: 140, textAlign: 'center', color: '#fff', opacity: vis}}>
+    {st.label && <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 26, letterSpacing: 7, opacity: 0.85, textShadow: sh}}>{st.label}</div>}
+    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: showEnd ? 104 : 112, lineHeight: 1.15, letterSpacing: showEnd ? 14 : 0,
+      color: showEnd ? (tl.titleCard?.color ?? '#FFC857') : '#fff', textShadow: sh}}>{showEnd ? st.end : fmtClock(st.v, st.dec)}</div>
+    {st.sub && <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 25, letterSpacing: 5, opacity: 0.92, textShadow: sh}}>{st.sub}</div>}
+  </div>;
+};
+
+// ---------- title card: opening (over the scene) + end card that matches frame 0 for a clean loop ----------
+const TitleWords: React.FC<{title: string; accent: string[]; color: string}> = ({title, accent, color}) => {
+  const acc = new Set(accent.map(norm));
+  return <>{title.split(' ').map((w, i) => <React.Fragment key={i}>
+    <span style={acc.has(norm(w)) ? {color, fontStyle: 'italic'} : undefined}>{w}</span>{' '}
+  </React.Fragment>)}</>;
+};
+function titleParts(t: number) {
+  const tc = tl.titleCard;
+  if (!tc) return {startO: 0, endO: 0};
+  const hold = tc.hold ?? 2.5, fadeOut = tc.fadeOut ?? 0.6, endHold = tc.endHold ?? 2.0;
+  return {startO: 1 - clamp((t - hold) / fadeOut), endO: clamp((t - (tl.duration - endHold)) / 0.6)};
+}
+function titleOpacity(t: number) { const p = titleParts(t); return Math.max(p.startO, p.endO); }
+const TitleCardLayer: React.FC<{t: number}> = ({t}) => {
+  const tc = tl.titleCard;
+  if (!tc) return null;
+  const bd = tc.backdrop ?? 0.35, loopBd = tc.loopBackdrop ?? 0.8;
+  const {endO} = titleParts(t);
+  const o = titleOpacity(t);
+  if (o <= 0) return null;
+  // backdrop: dark at the loop point (frame 0 and the last frames), lighter while the scene shows through
+  const bOpen = lerp(loopBd, bd, ease(clamp(t / 0.9)));
+  const backdrop = endO > 0 ? lerp(bd, loopBd, endO) : bOpen;
+  const color = tc.color ?? '#FFC857';
+  const accent = typeof tc.accent === 'string' ? [tc.accent] : tc.accent ?? [];
+  return <AbsoluteFill style={{opacity: o}}>
+    <AbsoluteFill style={{background: `rgba(6,10,18,${backdrop})`}} />
+    <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', padding: '0 140px'}}>
+      <div style={{textAlign: 'center', marginTop: -120}}>
+        <div style={{fontFamily: 'EB Garamond', fontWeight: 600, fontSize: 104, lineHeight: 1.06, color: '#fff', letterSpacing: -1,
+          textShadow: '0 4px 30px rgba(0,0,0,.45)'}}><TitleWords title={tc.title} accent={accent} color={color} /></div>
+        {tc.subtitle && <div style={{marginTop: 34, fontFamily: 'Space Mono', fontWeight: 700, fontSize: 24, letterSpacing: 6, color: 'rgba(255,255,255,.8)'}}>{tc.subtitle}</div>}
+      </div>
+    </AbsoluteFill>
+  </AbsoluteFill>;
+};
+
+// ---------- review helper: TikTok UI safe zones (top 150, bottom 400, right 140) ----------
+export const SafeZones: React.FC = () => <AbsoluteFill style={{pointerEvents: 'none'}}>
+  <div style={{position: 'absolute', top: 0, left: 0, right: 0, height: 150, background: 'rgba(255,0,60,.28)', borderBottom: '3px dashed #ff003c'}} />
+  <div style={{position: 'absolute', bottom: 0, left: 0, right: 0, height: 400, background: 'rgba(255,0,60,.28)', borderTop: '3px dashed #ff003c'}} />
+  <div style={{position: 'absolute', top: 150, bottom: 400, right: 0, width: 140, background: 'rgba(255,0,60,.28)', borderLeft: '3px dashed #ff003c'}} />
+</AbsoluteFill>;
+
 export const Overlay: React.FC = () => {
   const f = useCurrentFrame(); const t = f / FPS;
-  const flash = t > T.snap ? Math.exp(-(t - T.snap) * 10) * 0.85 : 0;
+  const flash = UI.snapFlash && t > T.snap ? Math.exp(-(t - T.snap) * 10) * 0.85 : 0;
   const end = tl.beats[tl.beats.length - 1];
   const endO = interpolate(t, [end.end - 1.1, end.end - 0.2], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return <AbsoluteFill>
-    <AbsoluteFill style={{background: 'radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(5,10,20,.45) 100%)'}} />
-    <AbsoluteFill style={{background: 'linear-gradient(rgba(5,10,20,.35), rgba(0,0,0,0) 18%, rgba(0,0,0,0) 78%, rgba(5,10,20,.4))'}} />
-    <TopChip t={t} />
-    <CounterCard t={t} />
-    <GravityMeter t={t} />
-    <Title t={t} />
+    {UI.vignette && <AbsoluteFill style={{background: 'radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(5,10,20,.45) 100%)'}} />}
+    {UI.vignette && <AbsoluteFill style={{background: 'linear-gradient(rgba(5,10,20,.35), rgba(0,0,0,0) 18%, rgba(0,0,0,0) 78%, rgba(5,10,20,.4))'}} />}
+    {UI.topChip && <TopChip t={t} />}
+    {UI.counter && <CounterCard t={t} />}
+    {UI.gravityMeter && <GravityMeter t={t} />}
+    {!tl.titleCard && <Title t={t} />}
+    <HudCountdown t={t} />
     <Captions t={t} />
+    <EditorialCaption t={t} />
     <AbsoluteFill style={{background: '#fff', opacity: flash}} />
-    <AbsoluteFill style={{background: '#0b1320', opacity: endO, justifyContent: 'center', alignItems: 'center'}}>
+    <TitleCardLayer t={t} />
+    {!tl.titleCard && <AbsoluteFill style={{background: '#0b1320', opacity: endO, justifyContent: 'center', alignItems: 'center'}}>
       <div style={{fontFamily: 'Archivo Black', fontSize: 84, color: '#fff', textAlign: 'center', lineHeight: 1.1}}>{END[0]}<br /><span style={{color: ACCENT}}>{END[1]}</span> {END[2]}</div>
-    </AbsoluteFill>
+    </AbsoluteFill>}
   </AbsoluteFill>;
 };

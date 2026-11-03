@@ -179,5 +179,184 @@ def main(script_path, public_dir):
     print(f"total {total:.2f}s, {len(beats)} beats")
     for b in beats: print(f"  {b['start']:6.2f}-{b['end']:6.2f} {b['id']:9s} vo {b['voDur']:.2f}s")
 
+
+# ======================================================================================
+# v2: cinematic format (no-VO capable). Used only when the script opts in, see is_legacy().
+# ======================================================================================
+def is_legacy(sc):
+    """Old scripts (Kuta EN/ID) have no "audio" block, have voice-over, and a tts engine.
+    They keep going through main() above, untouched, so they render byte-identical audio."""
+    return "audio" not in sc and sc.get("voiceover", True) is not False and sc.get("tts", "unset") is not None
+
+NEW_SFX = {"impact", "sweep_up", "sweep_down", "noise_wall", "shimmer", "swell", "silence_cut", "file"}
+LEGACY_SFX = {"whoosh", "drop", "rise", "tick", "wave", "wind", "snap", "thuds"}
+AUDIO_EXT = (".wav", ".mp3", ".flac", ".ogg", ".aif", ".aiff")
+
+def _legacy_sfx_stereo(kind):
+    from audio_fx import SR as SR2
+    mono = sfx(kind)  # 24 kHz mono from the original generator
+    n2 = int(round(len(mono) * SR2 / SR))
+    up = np.interp(np.arange(n2) / SR2, np.arange(len(mono)) / SR, mono)
+    return np.vstack([up, up]) * 0.7
+
+def _render_sfx(ev, seed, idx):
+    """Returns (stereo clip, label) for one sfx entry."""
+    import audio_fx as fx
+    kind = ev.get("type", "file")
+    rng = fx.rng_for(ev.get("seed", seed), "sfx", idx, kind)
+    if kind.lower().endswith(AUDIO_EXT) or kind == "file":
+        name = ev.get("file", kind)
+        path = fx.find_asset("sfx", name)
+        if not path: raise SystemExit(f"sfx file not found: assets/sfx/{name}")
+        return fx.load_audio(path), f"file: {name}"
+    if kind == "impact":
+        lvl = ev.get("level", "medium"); return fx.impact(lvl, rng), f"impact ({lvl})"
+    if kind in ("sweep_up", "sweep_down"):
+        d = ev.get("dur", 1.5); direction = "up" if kind == "sweep_up" else "down"
+        clip = fx.sweep(direction, d, ev.get("from"), ev.get("to"), rng)
+        lo, hi = (ev.get("from"), ev.get("to"))
+        return clip, f"{kind} {d:g}s" + (f" {lo:g}→{hi:g}Hz" if lo and hi else "")
+    if kind == "noise_wall":
+        return fx.noise_wall(ev.get("dur", 4.0), ev.get("intensity", 0.8), ev.get("fadeIn", 0.6), ev.get("fadeOut", 1.0),
+                             ev.get("color", "pink"), ev.get("lo", 60), ev.get("hi", 7000), rng), f"noise_wall ({ev.get('intensity', 0.8):g})"
+    if kind == "shimmer":
+        return fx.shimmer(ev.get("dur", 3.0), ev.get("density", 8.0), ev.get("fLo", 2000), ev.get("fHi", 4000), rng), "shimmer"
+    if kind == "swell":
+        return fx.swell(ev.get("dur", 1.5), rng), "swell"
+    if kind in LEGACY_SFX:
+        return _legacy_sfx_stereo(kind), kind
+    raise SystemExit(f"unknown sfx type '{kind}'. Synth types: {sorted(NEW_SFX | LEGACY_SFX)}, or a file name in assets/sfx/")
+
+def main_v2(sc, public_dir, export_wav=None):
+    import audio_fx as fx
+    A = sc.get("audio") or {}
+    seed = int(A.get("seed", 1))
+    voiceover = sc.get("voiceover", True) is not False and sc.get("tts", "unset") is not None
+    gap = sc.get("gap", 0.28)
+    lead = sc.get("lead", 0.35 if voiceover else 0.0)
+    tail = sc.get("tail", 1.6 if voiceover else 0.0)
+    os.makedirs(os.path.join(public_dir, "audio"), exist_ok=True)
+
+    # ---- timing: VO length when there is voice-over, otherwise the beat's "duration"
+    t = lead; beats = []; vo_clips = []
+    for b in sc["beats"]:
+        has_vo = voiceover and not b.get("novo") and (b.get("say") or b.get("text"))
+        if has_vo:
+            a = synth(b.get("say", b["text"]), sc); d = len(a) / SR
+            words = word_times(b["text"], d); length = d + gap
+            vo_clips.append((t, a))
+        else:
+            if "duration" not in b: print(f"  beat '{b['id']}' has no VO and no duration, using 3.0 s")
+            length = float(b.get("duration", 3.0)); d = 0.0
+            words = word_times(b["text"], length * 0.8) if b.get("text") else []
+            words = [{**w, "s": w["s"] + 0.1, "e": w["e"] + 0.1} for w in words]
+        beats.append({**b, "start": round(t, 3), "voStart": round(t, 3), "voDur": round(d, 3),
+                      "words": [{**w, "s": round(w["s"] + t, 3), "e": round(w["e"] + t, 3)} for w in words]})
+        t += length
+    total = t + tail
+    for i, b in enumerate(beats):
+        b["end"] = beats[i + 1]["start"] if i + 1 < len(beats) else round(total, 3)
+    n = int(round(total * fx.SR))
+    events = []
+
+    # ---- drone intensity keyframes from beats
+    keys = []
+    for b in beats:
+        dr = b.get("drone")
+        if dr is None: continue
+        for k in (dr if isinstance(dr, list) else [dr]):
+            k = {"intensity": k} if isinstance(k, (int, float)) else k
+            keys.append({"t": b["start"] + k.get("at", 0.0), "v": float(k.get("intensity", 0.0)),
+                         "fade": k.get("fade", A.get("drone", {}).get("fade", 1.5) if isinstance(A.get("drone"), dict) else 1.5),
+                         "cut": bool(k.get("cut", False))})
+    drone_cfg = A.get("drone", {}) if isinstance(A.get("drone"), dict) else {}
+    if keys or drone_cfg:
+        inten = fx.intensity_curve(keys, n)
+        drone = fx.drone_layer(inten, drone_cfg, seed)
+        for i, k in enumerate(sorted(keys, key=lambda k: k["t"])):
+            nxt = sorted(keys, key=lambda k: k["t"])[i + 1]["t"] if i + 1 < len(keys) else total
+            if k["v"] > 0: events.append({"name": f"drone {k['v']:.2f}" + (" (cut)" if k["cut"] else ""), "start": round(k["t"], 3), "end": round(nxt, 3)})
+    else:
+        drone = np.zeros((2, n))
+
+    # ---- ambience
+    amb, amb_src = fx.ambience_layer(n, A.get("ambience", "auto"), seed)
+    amb *= float(A.get("ambienceGain", 1.0))
+
+    # ---- sfx events (+ silence cuts)
+    clips = []; cuts = []
+    idx = 0
+    for b in beats:
+        for ev in b.get("sfx", []):
+            at = b["start"] + float(ev.get("at", 0.0)); idx += 1
+            if ev.get("type") == "silence_cut":
+                hold = ev.get("hold", "beat")
+                until = total + 1 if hold == "end" else (b["end"] if hold == "beat" else at + float(hold))
+                cuts.append({"t": at, "len": max(1, int(ev.get("frames", 2))) * fx.FRAME, "until": until, "resume": float(ev.get("resume", 1.0))})
+                events.append({"name": "silence_cut", "start": round(at, 3), "end": round(at + 0.8, 3)})
+                continue
+            clip, label = _render_sfx(ev, seed, idx)
+            gl, gr = fx.pan_gains(ev.get("pan", 0.0))
+            clip = clip * float(ev.get("gain", 1.0)) * np.array([[gl], [gr]])
+            clips.append((int(at * fx.SR), clip))
+            events.append({"name": label, "start": round(at, 3), "end": round(at + clip.shape[1] / fx.SR, 3)})
+    fxbus = np.zeros((2, n))
+    tt = np.arange(n) / fx.SR
+    for s0, clip in clips:
+        m = min(clip.shape[1], n - s0)
+        if m <= 0: continue
+        c = clip[:, :m].copy()
+        for cu in cuts:  # sounds that started before a cut get choked within 1-2 frames
+            if s0 / fx.SR < cu["t"] < (s0 + m) / fx.SR:
+                lt = tt[s0:s0 + m]
+                c *= 1 - fx.smoothstep(cu["t"], cu["t"] + cu["len"], lt)
+        fxbus[:, s0:s0 + m] += c
+    amb_gate = np.ones(n)
+    for cu in cuts:
+        down = 1 - fx.smoothstep(cu["t"], cu["t"] + cu["len"], tt)
+        up = fx.smoothstep(cu["until"], cu["until"] + cu["resume"], tt)
+        amb_gate *= np.maximum(down, up)
+    amb *= amb_gate
+    if amb_src != "none":
+        on = amb_gate > 0.05
+        edges = np.flatnonzero(np.diff(np.concatenate([[0], on.astype(int), [0]])))
+        for a0, a1 in zip(edges[::2], edges[1::2]):
+            events.append({"name": f"ambience ({amb_src})", "start": round(a0 / fx.SR, 3), "end": round(a1 / fx.SR, 3)})
+
+    # ---- voice-over (optional) + ducking
+    vo2 = np.zeros((2, n))
+    if vo_clips:
+        for at, a in vo_clips:
+            up = np.interp(np.arange(int(len(a) * fx.SR / SR)) / fx.SR, np.arange(len(a)) / SR, a)
+            s0 = int(at * fx.SR); m = min(len(up), n - s0); vo2[:, s0:s0 + m] += up[:m]
+        from scipy.signal import lfilter
+        env = lfilter([0.0008], [1, -0.9992], np.abs(vo2[0])) * 8
+        duck = 1 - float(A.get("duck", 0.55)) * np.clip(env, 0, 1)
+        amb *= duck; fxbus *= duck; drone *= 1 - 0.3 * np.clip(env, 0, 1)
+        sf.write(os.path.join(public_dir, "audio", "vo.wav"), vo2[0].astype(np.float32), fx.SR)
+
+    mix = vo2 + drone * float(A.get("droneGain", 1.0)) + amb * 0.5 + fxbus * float(A.get("sfxGain", 0.8))
+    mcfg = A.get("master", {})
+    mix, out_lufs, gr, peak = fx.master(mix, float(mcfg.get("lufs", -14.0)), float(mcfg.get("ceiling", -1.0)))
+    sf.write(os.path.join(public_dir, "audio", "mix.wav"), mix.T.astype(np.float32), fx.SR)
+    if export_wav:
+        os.makedirs(os.path.dirname(os.path.abspath(export_wav)), exist_ok=True)
+        sf.write(export_wav, mix.T.astype(np.float32), fx.SR)
+
+    tl = {"title": sc["title"], "fps": 30, "duration": round(total, 3), "locale": sc.get("locale", "en-US"),
+          "mode": sc.get("mode", "scene"), "voiceover": voiceover, "captionStyle": sc.get("captionStyle", "karaoke"),
+          "titleCard": sc.get("titleCard"), "ui": sc.get("ui", {}), "audioEvents": sorted(events, key=lambda e: e["start"]),
+          "beats": beats}
+    if "endCard" in sc: tl["endCard"] = sc["endCard"]
+    json.dump(tl, open(os.path.join(public_dir, "timeline.json"), "w"), indent=1, ensure_ascii=False)
+    print(f"total {total:.2f}s, {len(beats)} beats, voiceover={voiceover}, ambience={amb_src}")
+    print(f"master: {out_lufs:.1f} LUFS, peak {peak:.1f} dBFS, limiter max reduction {gr:.1f} dB, stereo 48 kHz")
+    for b in beats: print(f"  {b['start']:6.2f}-{b['end']:6.2f} {b['id']:12s}" + (f" vo {b['voDur']:.2f}s" if b['voDur'] else ""))
+
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    _sc = json.load(open(sys.argv[1], encoding="utf-8"))
+    if is_legacy(_sc):
+        main(sys.argv[1], sys.argv[2])
+    else:
+        sys.path.insert(0, HERE)
+        main_v2(_sc, sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)

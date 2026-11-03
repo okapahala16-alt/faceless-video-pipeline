@@ -1,0 +1,152 @@
+{
+ "title": "What if gravity switched off for ten seconds?",
+ "locale": "en-US",
+ "voiceover": false,
+ "tts": null,
+ "captionStyle": "editorial",
+ "ui": {
+  "topChip": false,
+  "counter": false,
+  "gravityMeter": false,
+  "vignette": true,
+  "snapFlash": true
+ },
+ "titleCard": {
+  "title": "What if gravity switched off for ten seconds?",
+  "accent": "gravity",
+  "subtitle": "KUTA BEACH · BALI · 12:00",
+  "hold": 2.5,
+  "fadeOut": 0.6,
+  "endHold": 2.0,
+  "color": "#FFC857"
+ },
+ "audio": {
+  "seed": 3,
+  "ambience": "auto",
+  "drone": {
+   "base": 700
+  },
+  "master": {
+   "lufs": -14,
+   "ceiling": -1.0
+  }
+ },
+ "beats": [
+  {
+   "id": "hook",
+   "duration": 4.5,
+   "shot": "orbit_wide",
+   "label": "",
+   "highlight": [],
+   "text": "Kuta Beach, Bali. Noon. The sand is packed.",
+   "hud": {
+    "label": "GRAVITY FAILS IN",
+    "from": 4.5,
+    "to": 0,
+    "rate": 1,
+    "sub": "LOCAL TIME 12:00"
+   },
+   "drone": {
+    "intensity": 0.15,
+    "fade": 2.0
+   }
+  },
+  {
+   "id": "drop",
+   "duration": 5.0,
+   "shot": "crowd_push",
+   "label": "",
+   "highlight": [],
+   "text": "Then gravity drops to one-sixth of normal.",
+   "events": [
+    {
+     "name": "gravityDrop",
+     "at": 0.3
+    },
+    {
+     "name": "massJump",
+     "at": 0.5
+    }
+   ],
+   "hud": {
+    "label": "GRAVITY RETURNS IN",
+    "from": 10,
+    "to": 0,
+    "rate": 0.6,
+    "sub": "TIME SLOWED DOWN 1.7x"
+   },
+   "drone": {
+    "at": 0.3,
+    "intensity": 0.55,
+    "fade": 1.0
+   },
+   "sfx": [
+    {
+     "type": "silence_cut",
+     "at": 0.3,
+     "frames": 2,
+     "hold": "end"
+    }
+   ]
+  },
+  {
+   "id": "snap",
+   "duration": 6.5,
+   "shot": "fall_drop",
+   "label": "",
+   "highlight": [],
+   "text": "Ten seconds later, it comes back. All at once.",
+   "events": [
+    {
+     "name": "snap",
+     "at": 0.8
+    },
+    {
+     "name": "massFall",
+     "at": 1.5
+    }
+   ],
+   "hud": {
+    "label": "GRAVITY RETURNS IN",
+    "from": "continue",
+    "to": 0,
+    "rate": 8.75,
+    "sub": "FAST-FORWARD",
+    "end": "BACK"
+   },
+   "drone": [
+    {
+     "at": 0.0,
+     "intensity": 0.9,
+     "fade": 0.8
+    },
+    {
+     "at": 1.9,
+     "intensity": 0.2,
+     "cut": true
+    }
+   ],
+   "sfx": [
+    {
+     "type": "sweep_up",
+     "at": 0.0,
+     "dur": 0.8,
+     "from": 220,
+     "to": 1600
+    },
+    {
+     "type": "sweep_down",
+     "at": 0.0,
+     "dur": 0.8,
+     "from": 1600,
+     "to": 220
+    },
+    {
+     "type": "impact",
+     "at": 1.9,
+     "level": "huge"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+{
+ "title": "SFX demo",
+ "mode": "sfxdemo",
+ "voiceover": false,
+ "tts": null,
+ "captionStyle": "editorial",
+ "audio": {"seed": 7, "ambience": "auto", "drone": {"base": 700}, "master": {"lufs": -14, "ceiling": -1.0}},
+ "beats": [
+  {"id": "ambience", "duration": 3.0, "label": "1 · AMBIENCE", "text": "Beach ambience (assets/sfx/ambience_*.wav if present, otherwise synth)."},
+  {"id": "cut", "duration": 1.5, "label": "2 · SILENCE CUT", "text": "Everything but the drone stops within 2 frames.",
+   "sfx": [{"type": "silence_cut", "at": 0.0, "frames": 2, "hold": "end"}]},
+  {"id": "drone", "duration": 4.0, "label": "3 · DRONE RISING", "text": "Intensity 0 to 0.6: louder, more harmonics, brighter.",
+   "drone": {"intensity": 0.6, "fade": 3.8}},
+  {"id": "shimmer", "duration": 2.0, "label": "4 · SHIMMER", "text": "Glassy pings, 2 to 4 kHz, seeded.",
+   "sfx": [{"type": "shimmer", "at": 0.0, "dur": 2.0, "density": 7}]},
+  {"id": "sweeps", "duration": 1.8, "label": "5 · SWEEP UP + SWEEP DOWN", "text": "Two glissandi at once, a cue before the hit.",
+   "sfx": [{"type": "sweep_up", "at": 0.0, "dur": 1.6, "from": 200, "to": 2000}, {"type": "sweep_down", "at": 0.0, "dur": 1.6, "from": 2000, "to": 200}]},
+  {"id": "impact", "duration": 2.0, "label": "6 · IMPACT (HUGE)", "text": "Broadband hit plus a 42 Hz boom, 3 s decay.",
+   "sfx": [{"type": "impact", "at": 0.0, "level": "huge"}]},
+  {"id": "wall", "duration": 3.0, "label": "7 · NOISE WALL", "text": "Thick filtered pink noise for the climax.",
+   "drone": {"intensity": 0.9, "fade": 1.0},
+   "sfx": [{"type": "noise_wall", "at": 0.0, "dur": 3.0, "intensity": 0.9, "fadeIn": 0.8, "fadeOut": 0.6}]},
+  {"id": "outro", "duration": 2.7, "label": "8 · DRONE ONLY", "text": "Everything fades back to the drone.",
+   "drone": {"intensity": 0.25, "fade": 2.0}}
+ ]
+}

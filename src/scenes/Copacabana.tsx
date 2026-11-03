@@ -148,7 +148,7 @@ export const BUILDINGS: Bld[] = (() => {
   const cols = ['#f7f3ea', '#efe6d2', '#e9ddd0', '#f4efe2', '#dfe7ea', '#f1e1cf', '#e8eef0', '#f6ead8', '#dcd6cc'];
   let x = -160;
   while (x < 160) {
-    const w = 9 + r() * 9, floors = 9 + Math.floor(r() * 6);
+    const w = 9 + r() * 9, floors = 12 + Math.floor(r() * 9); // 12-20 floors (Avenida Atlantica)
     out.push({x: x + w / 2, w, d: 14 + r() * 6, h: floors * 3.1, c: cols[Math.floor(r() * cols.length)], floors});
     x += w + 0.6 + r() * 1.2;
   }
@@ -192,6 +192,13 @@ const Dome: React.FC<{x: number; z: number; h: number; r: number; lean?: number}
   </group>;
 };
 
+// Forte de Copacabana: a low, wide fort on the south-west headland (simple stepped walls + one turret)
+const Forte: React.FC<{x: number; z: number; y: number}> = ({x, z, y}) => <group position={[x, y, z]} rotation={[0, 0.6, 0]}>
+  <mesh position={[0, 2.5, 0]} material={ME('#d8c8a2')} castShadow receiveShadow><boxGeometry args={[34, 5, 24]} /></mesh>
+  <mesh position={[2, 6.5, 0]} material={ME('#cdbd96')} castShadow><boxGeometry args={[20, 3.2, 14]} /></mesh>
+  <mesh position={[-11, 7, 6]} material={ME('#c4b38b')} castShadow><cylinderGeometry args={[2.6, 3, 6, 10]} /></mesh>
+  <mesh position={[0, 5.2, -12.2]} material={ME('#7d735d')}><boxGeometry args={[30, 0.8, 0.6]} /></mesh>
+</group>;
 const Hills: React.FC = () => {
   const hills = useMemo(() => {
     const r = mulberry32(71);
@@ -201,10 +208,15 @@ const Hills: React.FC = () => {
     {hills.map((h, i) => <mesh key={i} position={[h.x, h.h / 2 - 2, h.z]} scale={[h.w, h.h, h.w * 0.8]} material={ME(i % 2 ? '#3d7a3f' : '#4a8a47')}>
       <icosahedronGeometry args={[0.62, 1]} /></mesh>)}
     {/* headland at the left end of the bay, and the domes beyond it */}
-    <mesh position={[-180, 8, -20]} scale={[52, 40, 70]} material={ME('#3f7d3a')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
-    <mesh position={[180, 6, -20]} scale={[44, 30, 60]} material={ME('#467f3f')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
-    <Dome x={-250} z={-70} h={118} r={30} lean={0.08} />
-    <Dome x={-212} z={-58} h={64} r={26} />
+    {/* Pedra do Leme (north-east end): bare rock with a green cap */}
+    <mesh position={[-180, 8, -20]} scale={[52, 40, 70]} material={ME('#6b6a60')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
+    <mesh position={[-184, 20, -18]} scale={[38, 14, 50]} material={ME('#3f7d3a')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
+    {/* south-west headland with the low fort on top */}
+    <mesh position={[180, 6, -20]} scale={[44, 30, 60]} material={ME('#5f6d55')}><icosahedronGeometry args={[0.6, 1]} /></mesh>
+    <Forte x={182} z={-22} y={19} />
+    {/* Sugarloaf + Urca: small, far, a hazy silhouette beyond Leme */}
+    <Dome x={-430} z={-175} h={88} r={22} lean={0.08} />
+    <Dome x={-388} z={-148} h={42} r={20} />
   </group>;
 };
 
@@ -463,8 +475,8 @@ export function copaShot(id: string, f: number): Shot {
       // toward the sea; flow (east) crosses the frame, shock shells sit on the inland (windward) faces
       const H = bldCenter(HERO), tau = t - runStart(t, id), a = 0.1 * clamp(tau / 9);
       const sx = SIDE.x * Math.cos(a) - SIDE.z * Math.sin(a), sz = SIDE.x * Math.sin(a) + SIDE.z * Math.cos(a);
-      const P = [H.x + sx * 120 + WEST.x * 55, 92 - 6 * clamp(tau / 9), H.z + sz * 120 + WEST.z * 55];
-      const L = [H.x + EAST.x * 150, 0, H.z + EAST.z * 150]; // buildings mid-frame, sea and water edge behind them
+      const P = [H.x + sx * 150 + WEST.x * 60, 118 - 6 * clamp(tau / 9), H.z + sz * 150 + WEST.z * 60];
+      const L = [H.x + EAST.x * 115, 30, H.z + EAST.z * 115]; // buildings mid-frame, sea and water edge behind them
       return {p0: P, p1: P, l0: L, l1: L, fov: 40, focus: [H.x, 0, H.z]};
     }
     // high above the old waterline, 45 deg down toward the south-east: seabed opening up as the sea leaves
@@ -513,7 +525,20 @@ function makeHide(f: number): Hide {
 
 const CLOSE_AIR_C: [number, number, number] = [PEOPLE[CLOSE_SUBJECT].x, 2.2, PEOPLE[CLOSE_SUBJECT].z], CLOSE_AIR_S: [number, number, number] = [16, 5, 16];
 const closeFollow = (f: number) => { const fo = personFree(CLOSE_SUBJECT, f); return fo ? [fo.dx, fo.dy * 0.6, fo.dz] : [0, 0, 0]; };
-const SKY_HEMI = new THREE.Color('#e3f2ff'), GROUND_HEMI = new THREE.Color('#e2c896');
+const GOLDEN = tl.lighting === 'golden';
+// late afternoon: sun ~13 deg up in the true west (inland, behind the Avenida Atlantica towers)
+const SUN_DIR = GOLDEN ? (() => { const e = (13 * Math.PI) / 180; return [WEST.x * Math.cos(e), Math.sin(e), WEST.z * Math.cos(e)]; })() : null;
+const SKY_HEMI = new THREE.Color(GOLDEN ? '#ffe2c2' : '#e3f2ff'), GROUND_HEMI = new THREE.Color(GOLDEN ? '#c9a27a' : '#e2c896');
+const GoldenSky: React.FC = () => {
+  const m = useMemo(() => new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: {top: {value: new THREE.Color('#6d9bd3')}, hor: {value: new THREE.Color('#ffd7a6')}, below: {value: new THREE.Color('#e9c29b')},
+      glow: {value: new THREE.Color('#ffae5c')}, sun: {value: new THREE.Vector3(...(SUN_DIR ?? [0, 1, 0]))}},
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader: 'uniform vec3 top; uniform vec3 hor; uniform vec3 below; uniform vec3 glow; uniform vec3 sun; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.0? mix(hor, top, smoothstep(0.0,0.55,h)) : mix(hor, below, smoothstep(0.0,-0.2,h)); float g = pow(max(dot(vP, normalize(sun)),0.0), 6.0); c += glow * g * 0.55; gl_FragColor=vec4(c,1.0);}',
+  }), []);
+  return <mesh material={m}><sphereGeometry args={[400, 32, 16]} /></mesh>;
+};
 const SKY_HEMI_SPLIT = new THREE.Color('#d2def0'), GROUND_HEMI_SPLIT = new THREE.Color('#a3abb4');
 
 export const CopacabanaWorld: React.FC = () => {
@@ -532,7 +557,8 @@ export const CopacabanaWorld: React.FC = () => {
     if (hemi.current) { hemi.current.color.copy(SKY_HEMI).lerp(SKY_HEMI_SPLIT, g); hemi.current.groundColor.copy(GROUND_HEMI).lerp(GROUND_HEMI_SPLIT, g); }
     if (fog.current) { const fg = FOG[shotNow] ?? [110, 560]; fog.current.near = fg[0]; fog.current.far = fg[1]; }
     if (sun.current) { // shadows follow the part of the world the shot is about (origin for the classic shots)
-      sun.current.position.set(focus[0] - 14, 34, focus[2] - 26);
+      if (SUN_DIR) sun.current.position.set(focus[0] + SUN_DIR[0] * 300, SUN_DIR[1] * 300, focus[2] + SUN_DIR[2] * 300);
+      else sun.current.position.set(focus[0] - 14, 34, focus[2] - 26);
       sun.current.target.position.set(focus[0], 0, focus[2]);
       sun.current.target.updateMatrixWorld();
     }
@@ -542,12 +568,17 @@ export const CopacabanaWorld: React.FC = () => {
   return <>
     <CameraRig shots={copaShot} />
     {/* sky dome and sun sit around the camera, so a camera that drifts kilometres still sees the sky */}
-    <group position={[cam.pos[0], 0, cam.pos[2]]}><Sky /></group>
-    <fog ref={fog} attach="fog" args={['#d3e8f7', 110, 560]} />
-    <hemisphereLight ref={hemi} args={['#e3f2ff', '#e2c896', 0.85]} />
-    <directionalLight ref={sun} position={[-14, 34, -26]} intensity={2.0} color="#fff1dc" castShadow
-      shadow-mapSize={[2048, 2048]} shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-40} shadow-camera-far={140} shadow-bias={-0.0005} />
-    <mesh position={[-90 + cam.pos[0], 85 + Math.max(0, cam.pos[1] - 20), -320 + cam.pos[2]]}><sphereGeometry args={[14, 20, 16]} /><meshBasicMaterial color="#fff6d8" fog={false} /></mesh>
+    <group position={[cam.pos[0], 0, cam.pos[2]]}>{GOLDEN ? <GoldenSky /> : <Sky />}</group>
+    <fog ref={fog} attach="fog" args={[GOLDEN ? '#efcfae' : '#d3e8f7', 110, 560]} />
+    <hemisphereLight ref={hemi} args={[GOLDEN ? '#ffe2c2' : '#e3f2ff', GOLDEN ? '#c9a27a' : '#e2c896', GOLDEN ? 1.0 : 0.85]} />
+    {GOLDEN
+      ? <directionalLight ref={sun} position={[-14, 34, -26]} intensity={3.1} color="#ffbd7c" castShadow
+          shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={120} shadow-camera-bottom={-120} shadow-camera-far={700} shadow-bias={-0.0008} />
+      : <directionalLight ref={sun} position={[-14, 34, -26]} intensity={2.0} color="#fff1dc" castShadow
+          shadow-mapSize={[2048, 2048]} shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-40} shadow-camera-far={140} shadow-bias={-0.0005} />}
+    {SUN_DIR
+      ? <mesh position={[cam.pos[0] + SUN_DIR[0] * 380, cam.pos[1] + SUN_DIR[1] * 380, cam.pos[2] + SUN_DIR[2] * 380]}><sphereGeometry args={[11, 20, 16]} /><meshBasicMaterial color="#ffe2b0" fog={false} /></mesh>
+      : <mesh position={[-90 + cam.pos[0], 85 + Math.max(0, cam.pos[1] - 20), -320 + cam.pos[2]]}><sphereGeometry args={[14, 20, 16]} /><meshBasicMaterial color="#fff6d8" fog={false} /></mesh>}
     {cam.pos[1] < 100 && <Clouds />}
     {/* open ocean: reaches far east (-x, -z) for shots that drift 2 km out to sea; near edge unchanged (z 150) */}
     {oceanMoves ? <OceanShift><Sea /></OceanShift> : <>
@@ -559,7 +590,8 @@ export const CopacabanaWorld: React.FC = () => {
     <Promenade />
     <Avenue hide={hide} />
     <Buildings />
-    <Hills />
+    {/* the hills sit behind the land-side shock-front camera (it would end up inside them) */}
+    {shotNow !== 'avenida_buildings_low' && <Hills />}
     <Kiosks />
     <LifeguardPosts />
     <VolleyNets />

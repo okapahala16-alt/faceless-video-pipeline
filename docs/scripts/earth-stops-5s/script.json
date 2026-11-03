@@ -942,5 +942,6 @@
       "sfx": []
     }
   ],
-  "accentColor": "#F2A33A"
+  "accentColor": "#F2A33A",
+  "lighting": "golden"
 }

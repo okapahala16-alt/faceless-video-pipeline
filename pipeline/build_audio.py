@@ -394,6 +394,7 @@ def main_v2(sc, public_dir, export_wav=None):
           "beats": beats}
     if "endCard" in sc: tl["endCard"] = sc["endCard"]
     if "accentColor" in sc: tl["accentColor"] = sc["accentColor"]
+    if "lighting" in sc: tl["lighting"] = sc["lighting"]
     json.dump(tl, open(os.path.join(public_dir, "timeline.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     print(f"total {total:.2f}s, {len(beats)} beats, voiceover={voiceover}, ambience={amb_src}")
     print(f"master: {out_lufs:.1f} LUFS, peak {peak:.1f} dBFS, limiter max reduction {gr:.1f} dB, stereo 48 kHz")

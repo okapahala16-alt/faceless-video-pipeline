@@ -17,6 +17,7 @@ Everything new is optional. Leave a field out and you get the old behaviour.
 | Field | Type | Default | Notes |
 |---|---|---|---|
 | `title` | string | required | |
+| `scene` | `"kuta"` or `"copacabana"` | `"kuta"` | which 3D world to render (see Scenes below) |
 | `locale` | string | `"en-US"` | number formatting (`id-ID` uses a decimal comma) |
 | `voiceover` | bool | `true` | `false` = no TTS at all, beats use `duration` |
 | `tts` | object or `null` | kokoro | `null` = no voice-over. Engines: see README |
@@ -52,6 +53,15 @@ last `endHold` s as the end card. Frame 0 and the last frame look the same, so t
   or a file name. `musicMode`: `"add"` (music + synth drone) or `"replace"`. Music follows the drone intensity.
 - `duck`: how much ambience/SFX drop under voice-over (only with VO).
 - `master`: integrated loudness target (ITU-R BS.1770) and limiter ceiling in dBFS (sample peak).
+
+## Scenes
+| scene | file | own shots (plus every Kuta shot name as a fallback) |
+|---|---|---|
+| `kuta` | `src/World.tsx` | `orbit_wide`, `beach_low`, `crowd_push`, `kid_follow`, `kid_side`, `wave_low`, `drift_up`, `crowd_air`, `crowd_air_hold`, `fall_drop`, `aftermath`, `orbit_end` |
+| `copacabana` | `src/scenes/Copacabana.tsx` | `bay_aerial` (establishing: city, bay, Sugarloaf-like dome), `promenade_low` (wave pavement), `crowd_sand`, `skyline_from_sea`, `sugarloaf`, `avenue` |
+
+Both scenes share the sea, the 190 physics people and the props, so every `events` name works in both.
+Copacabana adds ~520 static background people and 150 umbrellas along the bay: they do not react to events.
 
 ## Beat fields
 

@@ -1,0 +1,17 @@
+{
+ "title": "Copacabana scene test",
+ "scene": "copacabana",
+ "voiceover": false,
+ "tts": null,
+ "captionStyle": "editorial",
+ "ui": {"topChip": false, "counter": false, "gravityMeter": false, "vignette": true, "snapFlash": false},
+ "audio": {"seed": 11, "ambience": "auto", "drone": {"base": 700}, "master": {"lufs": -14, "ceiling": -1.0}},
+ "beats": [
+  {"id": "bay", "duration": 3, "shot": "bay_aerial", "label": "", "highlight": [], "text": "bay_aerial", "drone": 0.2},
+  {"id": "promenade", "duration": 3, "shot": "promenade_low", "label": "", "highlight": [], "text": "promenade_low"},
+  {"id": "sand", "duration": 3, "shot": "crowd_sand", "label": "", "highlight": [], "text": "crowd_sand"},
+  {"id": "sea", "duration": 3, "shot": "skyline_from_sea", "label": "", "highlight": [], "text": "skyline_from_sea"},
+  {"id": "dome", "duration": 3, "shot": "sugarloaf", "label": "", "highlight": [], "text": "sugarloaf"},
+  {"id": "avenue", "duration": 3, "shot": "avenue", "label": "", "highlight": [], "text": "avenue"}
+ ]
+}

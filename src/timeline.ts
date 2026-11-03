@@ -13,7 +13,7 @@ export type TitleCard = {title: string; accent?: string | string[]; subtitle?: s
 export type UiFlags = {topChip?: boolean; counter?: boolean; gravityMeter?: boolean; vignette?: boolean; snapFlash?: boolean};
 export type AudioEvent = {name: string; start: number; end: number};
 export const tl = raw as unknown as {title: string; duration: number; locale?: string; endCard?: string[]; beats: Beat[];
-  mode?: 'scene' | 'sfxdemo'; voiceover?: boolean; captionStyle?: CaptionStyle; titleCard?: TitleCard | null; ui?: UiFlags;
+  mode?: 'scene' | 'sfxdemo'; scene?: string; voiceover?: boolean; captionStyle?: CaptionStyle; titleCard?: TitleCard | null; ui?: UiFlags;
   audioEvents?: AudioEvent[]};
 export const FPS = 30;
 export const beatById = (id: string) => tl.beats.find((b) => b.id === id);

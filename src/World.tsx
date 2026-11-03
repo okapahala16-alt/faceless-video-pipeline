@@ -6,7 +6,7 @@ import {FPS, beatAt, ease, lerp, clamp, mulberry32} from './timeline';
 import {PEOPLE, KID_INDEX, OBJS, objPose, frisbeePose, wave, simT, T, fr, KID} from './sim';
 
 // ---------- shared geometry ----------
-const geo = {
+export const geo = {
   body: new THREE.CapsuleGeometry(0.26, 0.55, 4, 10),
   head: new THREE.SphereGeometry(0.22, 14, 12),
   hair: new THREE.SphereGeometry(0.235, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2.1),
@@ -24,12 +24,12 @@ const geo = {
 };
 const mat = (c: string, o: Partial<THREE.MeshStandardMaterialParameters> = {}) => new THREE.MeshStandardMaterial({color: c, roughness: 0.85, flatShading: true, ...o});
 const matCache = new Map<string, THREE.Material>();
-const M = (c: string) => { if (!matCache.has(c)) matCache.set(c, mat(c)); return matCache.get(c)!; };
+export const M = (c: string) => { if (!matCache.has(c)) matCache.set(c, mat(c)); return matCache.get(c)!; };
 
 // ---------- camera ----------
-type Shot = {p0: number[]; p1: number[]; l0: number[]; l1: number[]; fov?: number};
+export type Shot = {p0: number[]; p1: number[]; l0: number[]; l1: number[]; fov?: number};
 const kidY = (f: number) => PEOPLE[KID_INDEX].y[f] * PEOPLE[KID_INDEX].s;
-function shotFor(id: string, f: number): Shot {
+export function shotFor(id: string, f: number): Shot {
   const ky = kidY(f);
   switch (id) {
     case 'orbit_wide': return {p0: [26, 20, 34], p1: [14, 14, 32], l0: [0, 0, 6], l1: [0, 0.5, 6]};
@@ -46,13 +46,13 @@ function shotFor(id: string, f: number): Shot {
     case 'orbit_end': default: return {p0: [18, 12, 30], p1: [-16, 20, 32], l0: [0, 0, 6], l1: [0, 0, 6]};
   }
 }
-const CameraRig: React.FC = () => {
+export const CameraRig: React.FC<{shots?: (id: string, f: number) => Shot}> = ({shots = shotFor}) => {
   const f = useCurrentFrame();
   const {camera} = useThree();
   useLayoutEffect(() => {
     const t = f / FPS, b = beatAt(t);
     const u = ease(clamp((t - b.start) / Math.max(0.1, b.end - b.start)));
-    const s = shotFor(b.shot, f);
+    const s = shots(b.shot, f);
     const p = s.p0.map((v, i) => lerp(v, s.p1[i], u));
     const l = s.l0.map((v, i) => lerp(v, s.l1[i], u));
     // impact shake
@@ -64,12 +64,12 @@ const CameraRig: React.FC = () => {
     camera.lookAt(l[0], l[1], l[2]);
     (camera as THREE.PerspectiveCamera).fov = 50;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
-  }, [f, camera]);
+  }, [f, camera, shots]);
   return null;
 };
 
 // ---------- environment ----------
-const Sky: React.FC = () => {
+export const Sky: React.FC = () => {
   const m = useMemo(() => new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false,
     uniforms: {top: {value: new THREE.Color('#2f8fe6')}, mid: {value: new THREE.Color('#8fd3ff')}, bot: {value: new THREE.Color('#fff1d6')}},
@@ -79,7 +79,7 @@ const Sky: React.FC = () => {
   return <mesh material={m}><sphereGeometry args={[400, 24, 16]} /></mesh>;
 };
 
-const Clouds: React.FC = () => {
+export const Clouds: React.FC = () => {
   const f = useCurrentFrame();
   const cl = useMemo(() => { const r = mulberry32(5); return Array.from({length: 14}, () => ({x: -150 + r() * 300, y: 40 + r() * 30, z: -120 - r() * 120, s: 6 + r() * 10})); }, []);
   return <group>{cl.map((c, i) => (
@@ -90,7 +90,7 @@ const Clouds: React.FC = () => {
     </group>))}</group>;
 };
 
-const Sea: React.FC = () => {
+export const Sea: React.FC = () => {
   const f = useCurrentFrame();
   const g = useMemo(() => { const g = new THREE.PlaneGeometry(260, 120, 130, 80); g.rotateX(-Math.PI / 2); g.translate(0, 0, -60); return g; }, []);
   const base = useMemo(() => Float32Array.from(g.attributes.position.array as Float32Array), [g]);
@@ -129,7 +129,7 @@ const Sand: React.FC = () => {
   return <mesh geometry={g} receiveShadow material={useMemo(() => new THREE.MeshStandardMaterial({vertexColors: true, roughness: 1, flatShading: true}), [])} />;
 };
 
-const Palm: React.FC<{x: number; z: number; h: number; lean: number}> = ({x, z, h, lean}) => {
+export const Palm: React.FC<{x: number; z: number; h: number; lean: number}> = ({x, z, h, lean}) => {
   const f = useCurrentFrame();
   const sway = Math.sin(f / 22 + x) * 0.04;
   return <group position={[x, 0.4, z]} rotation={[0, 0, lean + sway]}>
@@ -164,7 +164,7 @@ const Shops: React.FC = () => {
 };
 
 // ---------- people ----------
-const PersonMesh: React.FC<{i: number}> = ({i}) => {
+export const PersonMesh: React.FC<{i: number}> = ({i}) => {
   const f = useCurrentFrame();
   const p = PEOPLE[i];
   const y = p.y[f], tilt = p.tilt[f];
@@ -185,7 +185,7 @@ const PersonMesh: React.FC<{i: number}> = ({i}) => {
   </group>;
 };
 
-const Objects: React.FC = () => {
+export const Objects: React.FC = () => {
   const f = useCurrentFrame();
   return <group>{OBJS.map((o, i) => {
     const q = objPose(o, f);
@@ -198,7 +198,7 @@ const Objects: React.FC = () => {
   })}</group>;
 };
 
-const SandBurst: React.FC = () => {
+export const SandBurst: React.FC = () => {
   const f = useCurrentFrame();
   const parts = useMemo(() => { const r = mulberry32(21); return Array.from({length: 260}, () => ({x: -25 + r() * 50, z: 2 + r() * 18, v: 0.3 + r() * 1.2, d: r() * 2.5, s: 0.04 + r() * 0.08})); }, []);
   const s0 = simT[fr(T.drift)], s = simT[f], sSnap = simT[fr(T.snap)];
@@ -213,7 +213,7 @@ const SandBurst: React.FC = () => {
   })}</group>;
 };
 
-const Frisbee: React.FC = () => {
+export const Frisbee: React.FC = () => {
   const f = useCurrentFrame(); const q = frisbeePose(f);
   if (!q) return null;
   return <mesh geometry={geo.frisbee} material={M('#ff2e63')} position={[q.x, q.y, q.z]} rotation={[0.15, f * 0.6, 0.1]} castShadow />;

@@ -63,7 +63,9 @@ const HAIR = ['#1b1b1b', '#3b2618', '#5a3825', '#111', '#d9b26f'];
 export type Person = {x: number; z: number; rot: number; shirt: string; skin: string; hair: string; hat: boolean; s: number;
   kid: boolean; y: Float32Array; tilt: Float32Array; tiltDir: number};
 
-const rnd = mulberry32(42);
+// crowd layout seed per scene: Kuta keeps 42 (frozen), other scenes get their own crowd
+const SCENE_SEEDS: Record<string, number> = {kuta: 42, copacabana: 1985};
+const rnd = mulberry32(SCENE_SEEDS[tl.scene ?? 'kuta'] ?? 42);
 export const KID = {x: 0.8, z: 9.5};
 const people: Person[] = [];
 const spots: [number, number][] = [];

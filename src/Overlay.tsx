@@ -18,6 +18,7 @@ const norm = (w: string) => w.replace(/[^\p{L}\p{N}']/gu, '').toLowerCase();
 type Chunk = {words: (Word & {hl: boolean})[]; s: number; e: number};
 const CHUNKS: Chunk[] = [];
 const styleOf = (b: Beat): CaptionStyle => b.captionStyle ?? tl.captionStyle ?? 'karaoke';
+const IS_KUTA = (tl.scene ?? 'kuta') === 'kuta';
 const UI = {topChip: true, counter: true, gravityMeter: true, vignette: true, snapFlash: true, ...(tl.ui ?? {})};
 for (const b of tl.beats) {
   if (styleOf(b) !== 'karaoke') continue;
@@ -217,13 +218,13 @@ export const Overlay: React.FC = () => {
     {UI.topChip && <TopChip t={t} />}
     {UI.counter && <CounterCard t={t} />}
     {UI.gravityMeter && <GravityMeter t={t} />}
-    {!tl.titleCard && <Title t={t} />}
+    {!tl.titleCard && IS_KUTA && <Title t={t} />}
     <HudCountdown t={t} />
     <Captions t={t} />
     <EditorialCaption t={t} />
     <AbsoluteFill style={{background: '#fff', opacity: flash}} />
     <TitleCardLayer t={t} />
-    {!tl.titleCard && <AbsoluteFill style={{background: '#0b1320', opacity: endO, justifyContent: 'center', alignItems: 'center'}}>
+    {!tl.titleCard && IS_KUTA && <AbsoluteFill style={{background: '#0b1320', opacity: endO, justifyContent: 'center', alignItems: 'center'}}>
       <div style={{fontFamily: 'Archivo Black', fontSize: 84, color: '#fff', textAlign: 'center', lineHeight: 1.1}}>{END[0]}<br /><span style={{color: ACCENT}}>{END[1]}</span> {END[2]}</div>
     </AbsoluteFill>}
   </AbsoluteFill>;

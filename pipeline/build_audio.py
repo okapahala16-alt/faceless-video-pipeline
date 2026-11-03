@@ -344,7 +344,7 @@ def main_v2(sc, public_dir, export_wav=None):
         sf.write(export_wav, mix.T.astype(np.float32), fx.SR)
 
     tl = {"title": sc["title"], "fps": 30, "duration": round(total, 3), "locale": sc.get("locale", "en-US"),
-          "mode": sc.get("mode", "scene"), "voiceover": voiceover, "captionStyle": sc.get("captionStyle", "karaoke"),
+          "mode": sc.get("mode", "scene"), "scene": sc.get("scene", "kuta"), "voiceover": voiceover, "captionStyle": sc.get("captionStyle", "karaoke"),
           "titleCard": sc.get("titleCard"), "ui": sc.get("ui", {}), "audioEvents": sorted(events, key=lambda e: e["start"]),
           "beats": beats}
     if "endCard" in sc: tl["endCard"] = sc["endCard"]

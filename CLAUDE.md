@@ -9,7 +9,10 @@ script JSON ──> pipeline/build_audio.py ──> public/audio/mix.wav + publi
 - **Remotion 4.0.540** + **@remotion/three** (Three.js 0.169, R3F 8.17, React 18.3.1). 1080x1920, 30 fps.
 - `src/Root.tsx` composition `Main`, duration from `public/timeline.json` (generated, git-ignored).
 - `src/sim.ts` deterministic physics precomputed per frame (frame = f(t)); scene events anchor to beats.
-- `src/World.tsx` the Kuta 3D scene (beach, sea, 190 people, props) + camera shots per beat.
+- `src/World.tsx` the Kuta 3D scene (beach, sea, 190 people, props) + camera shots per beat; exports shared parts.
+- `src/scenes/Copacabana.tsx` Copacabana world (wave-pattern promenade, avenue with moving cars, high-rise row,
+  hills, Sugarloaf-like domes, kiosks, lifeguard posts, volley nets, instanced background crowd). Pick with `"scene"`.
+  No Christ the Redeemer statue on purpose: its image rights are claimed for commercial use.
 - `src/Overlay.tsx` captions (karaoke/editorial), HUD countdown, title card, legacy counter/meter, safe-zone guides.
 - `src/SfxDemo.tsx` black screen used when `mode: "sfxdemo"`.
 - Python audio: numpy, soundfile, scipy. TTS: Kokoro (EN, CPU) or OmniVoice (clone, GPU).
@@ -31,7 +34,7 @@ set `REMOTION_BROWSER=<path to chrome-headless-shell>`. On a normal PC leave bot
 ## Important files
 - `docs/SCRIPT_FORMAT.md` every JSON field, with examples. Read it before writing a script.
 - `pipeline/script.json`, `pipeline/script.id.json` Kuta EN/ID (frozen reference videos).
-- `docs/scripts/` new episode scripts. `docs/sfx-demo.json` SFX audition.
+- `docs/scripts/` new episode scripts (`copacabana-scene-test.json` = one beat per Copacabana shot). `docs/sfx-demo.json` SFX audition.
 - `assets/sfx/` SFX + `ambience_*.wav`; `assets/music/` drone beds. Audio files are git-ignored.
 - `voices/` OmniVoice reference clips (git-ignored). Only voices you own or have permission for.
 

@@ -8,3 +8,14 @@ voices/*.wav
 voices/*.mp3
 voices/*.pt
 public/timeline.json
+render/
+.cache/
+.remotion/
+*.log
+# large audio files (keep your library locally; see assets/README.md)
+assets/**/*.wav
+assets/**/*.mp3
+assets/**/*.flac
+assets/**/*.ogg
+assets/**/*.aif
+assets/**/*.aiff

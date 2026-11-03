@@ -1,5 +1,5 @@
 // Deterministic physics, precomputed once per frame index: frame = f(t).
-import {tl, FPS, beatById, mulberry32, clamp, lerp} from './timeline';
+import {tl, FPS, beatById, mulberry32, clamp, lerp, ease} from './timeline';
 
 export const N = Math.ceil(tl.duration * FPS) + 2;
 // Scene events are anchored to beats. A beat claims an event with "events": ["snap"] or
@@ -160,3 +160,74 @@ export function wave(f: number) {
   if (q < 0) return {zc: -40, amp: 0};
   return {zc: lerp(-16, 1.0, clamp(q / 3.2)), amp: 4.0 * Math.sin(Math.PI * clamp(q / 3.8 + 0.12))};
 }
+
+// ======================= Earth-stops events (opt-in, new anchors) =======================
+// Everything below only does something when a beat claims one of these events. Scripts without
+// them (Kuta) get Infinity anchors, so no pose, camera or grade changes. The generator below has its
+// own seed: the mulberry32 stream above (crowd layout, jumps, props) is untouched.
+
+// Real east in scene coordinates. The beach runs along x (-x = north-east, toward Leme), the sea
+// is at -z (south-east). True east = 37 deg off the shoreline, out to sea and a bit toward Leme.
+export const EAST = (() => { const x = -0.6, z = -0.8, l = Math.hypot(x, z); return {x: x / l, y: 0, z: z / l}; })();
+const EA = {
+  earthStop: anchor('earthStop', '', 0),
+  freeDrift: anchor('freeDriftEast', '', 0),
+  air: anchor('visibleAirCoMoving', '', 0),
+  respin: anchor('earthRespin', '', 0),
+};
+export const TE = {
+  earthStop: EA.earthStop.t,
+  drift0: EA.freeDrift.t,
+  air: EA.air.t,
+  airBeat: EA.air.beat ? {start: EA.air.beat.start, end: EA.air.beat.end} : null,
+  respin: EA.respin.t,
+};
+// 428.2 m/s relative to the ground, shown at 12x slow motion = 35.7 m/s on screen
+export const DRIFT = {v: 428.2 / 12, ramp: 4};
+// distance every free thing has moved east (m) at video time t: ease-in over `ramp` s, then constant
+// speed; frozen once the Earth spins again
+export function driftAt(t: number): number {
+  const t0 = TE.drift0;
+  if (!Number.isFinite(t0) || t <= t0) return 0;
+  const u = Math.min(t, TE.respin) - t0;
+  if (u <= 0) return 0;
+  const {v, ramp: R} = DRIFT;
+  return u < R ? (v * u * u) / (2 * R) : v * (u - R / 2);
+}
+export function driftSpeedAt(t: number): number {
+  const t0 = TE.drift0;
+  if (!Number.isFinite(t0) || t <= t0 || t >= TE.respin) return 0;
+  const u = t - t0;
+  return u < DRIFT.ramp ? (DRIFT.v * u) / DRIFT.ramp : DRIFT.v;
+}
+export const driftActive = (t: number) => Number.isFinite(TE.drift0) && t > TE.drift0;
+// per-body speed spread (+-6 %). The spread is soft-capped so the crowd stays a crowd after ~2 km.
+const SPREAD_CAP = 260;
+export const spreadDrift = (d: number, k: number) => d + (k - 1) * SPREAD_CAP * Math.tanh(d / SPREAD_CAP);
+
+export type FreeParams = {k: number; lift: number; spin: number; phase: number; lean: number; arms: number; tumble: number};
+export function freeParams(seed: number, n: number): FreeParams[] {
+  const r = mulberry32(seed);
+  return Array.from({length: n}, () => ({k: 0.94 + r() * 0.12, lift: 0.3 + r() * 0.9, spin: (r() < 0.5 ? -1 : 1) * (0.2 + r() * 0.4),
+    phase: r() * Math.PI * 2, lean: 0.35 + r() * 0.2, arms: 0.75 + r() * 0.25, tumble: 0.08 + r() * 0.12}));
+}
+const PEOPLE_FREE = freeParams(4271, PEOPLE.length);
+const OBJ_FREE = freeParams(4283, OBJS.length);
+
+// Pose offsets of one free body s seconds after the Earth stops: feet held by friction for a moment
+// (lean east), then lifted 0.3-1.2 m, slow yaw spin and a small tumble. Calm, not violent.
+export type FreeOffset = {dx: number; dy: number; dz: number; lean: number; yaw: number; tumble: number; arms: number; speed: number};
+export function freeOffset(fp: FreeParams, t: number): FreeOffset | null {
+  if (!driftActive(t)) return null;
+  const s = t - TE.drift0;
+  const d = spreadDrift(driftAt(t), fp.k);
+  const lean = fp.lean * (s < 0.4 ? Math.sin((s / 0.4) * Math.PI / 2) : lerp(1, 0.45, ease(clamp((s - 0.4) / 1.4))));
+  const lift = fp.lift * ease(clamp((s - 0.3) / 1.8)) + 0.06 * Math.sin(s * 0.9 + fp.phase) * clamp((s - 1) / 1.5);
+  const ss = Math.max(0, s - 0.4);
+  return {dx: EAST.x * d, dy: lift, dz: EAST.z * d, lean, yaw: fp.spin * ss, tumble: fp.tumble * Math.sin(ss * 0.5 + fp.phase) * clamp(ss / 1.5),
+    arms: fp.arms * ease(clamp((s - 0.2) / 0.8)), speed: driftSpeedAt(t) * fp.k};
+}
+export const personFree = (i: number, f: number) => freeOffset(PEOPLE_FREE[i], f / FPS);
+export const objFree = (i: number, f: number) => freeOffset(OBJ_FREE[i], f / FPS);
+// lean axis: tilting +y about (y x EAST) turns the body's top toward east (feet stay behind)
+export const LEAN_AXIS = {x: EAST.z, y: 0, z: -EAST.x}; // = up x EAST

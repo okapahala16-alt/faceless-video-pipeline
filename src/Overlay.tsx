@@ -9,7 +9,10 @@ import '@fontsource/eb-garamond/600-italic.css';
 import {tl, FPS, beatAt, Word, clamp, ease, lerp, Beat, CaptionStyle, Hud} from './timeline';
 import {gravity, T, PEOPLE, KID_INDEX, fr} from './sim';
 
-const ACCENT = '#7CFFB2';
+const ACCENT = '#7CFFB2'; // legacy (Kuta) accent
+// episode accent for the new overlay features (highlights, counter label under a HUD)
+const ACCENT2 = tl.accentColor ?? tl.titleCard?.color ?? '#FFC857';
+const BALANCE = {textWrap: 'balance'} as React.CSSProperties; // Chrome 114+: even line lengths, no lone word
 const END = tl.endCard ?? ['Where would', 'you', 'stand?'];
 const ID = (tl.locale || '').startsWith('id');
 const norm = (w: string) => w.replace(/[^\p{L}\p{N}']/gu, '').toLowerCase();
@@ -56,6 +59,16 @@ const CounterCard: React.FC<{t: number}> = ({t}) => {
   let v = c.unit === 'm/s²' ? gravity(t) : lerp(c.from, c.to, u);
   if (b.id === 'jump') { let m = 0; for (let i = 0; i <= fr(t); i++) m = Math.max(m, kid.y[i]); v = Math.max(0.5, Math.min(3.0, m + 0.03)); }
   const enter = ease(clamp((t - b.start) / 0.25));
+  if (b.hud) { // beat has a HUD: counter sits centred below the HUD block, label in the episode accent
+    return <div style={{position: 'absolute', top: HUD_BOTTOM + 26, left: 140, right: 140, display: 'flex', justifyContent: 'center',
+      transform: `translateY(${(1 - enter) * -16}px)`, opacity: enter * (1 - titleOpacity(t))}}>
+      <div style={{padding: '18px 34px 16px', borderRadius: 26, background: 'rgba(11,19,32,.72)', border: '2px solid rgba(255,255,255,.14)', textAlign: 'center'}}>
+        <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 24, letterSpacing: 4, color: ACCENT2}}>{c.label}</div>
+        <div style={{fontFamily: 'Archivo Black', fontSize: 78, color: '#fff', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums'}}>
+          {fmt(v, c.dec)}<span style={{fontSize: 36, marginLeft: 12, color: 'rgba(255,255,255,.7)'}}>{c.unit}</span></div>
+      </div>
+    </div>;
+  }
   return <div style={{position: 'absolute', top: 210, left: 64, padding: '26px 34px 22px', borderRadius: 28, background: 'rgba(11,19,32,.72)', border: '2px solid rgba(255,255,255,.14)',
     transform: `translateX(${(1 - enter) * -40}px)`, opacity: enter, minWidth: 360}}>
     <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 26, letterSpacing: 4, color: ACCENT}}>{c.label}</div>
@@ -96,6 +109,27 @@ const Title: React.FC<{t: number}> = ({t}) => {
 };
 
 // ---------- editorial caption: one serif italic sentence per beat, fade in/out ----------
+// words/phrases from beat.highlight are drawn in the accent colour (case and punctuation ignored)
+// sep = separator before the token: ' ' or a no-break space (U+00A0) kept from the script so "1,670 km/h" never splits
+type Tok = {pre: string; core: string; post: string; hl: boolean; sep: string};
+function highlightTokens(text: string, highlight: string[]): Tok[] {
+  const toks: Tok[] = [];
+  for (const chunk of text.split(/[ \t\n\r]+/).filter(Boolean)) {
+    chunk.split('\u00a0').filter(Boolean).forEach((w, j) => {
+      const m = w.match(/^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}%]*)$/u)!;
+      toks.push({pre: m[1], core: m[2], post: m[3], hl: false, sep: j > 0 ? '\u00a0' : ' '});
+    });
+  }
+  const keys = toks.map((k) => norm(k.core));
+  for (const h of highlight ?? []) {
+    const ph = h.split(/\s+/).map(norm).filter(Boolean);
+    if (!ph.length) continue;
+    for (let i = 0; i + ph.length <= keys.length; i++) {
+      if (ph.every((p, j) => keys[i + j] === p)) for (let j = 0; j < ph.length; j++) toks[i + j].hl = true;
+    }
+  }
+  return toks;
+}
 const EditorialCaption: React.FC<{t: number}> = ({t}) => {
   const b = beatAt(t);
   if (styleOf(b) !== 'editorial') return null;
@@ -108,14 +142,24 @@ const EditorialCaption: React.FC<{t: number}> = ({t}) => {
   if (z - a < 0.6) return null;
   const o = Math.min(clamp((t - a) / 0.45), clamp((z - t) / 0.4));
   if (o <= 0) return null;
-  return <div style={{position: 'absolute', left: 140, right: 140, top: 1150, display: 'flex', justifyContent: 'center', opacity: o,
-    transform: `translateY(${(1 - o) * 10}px)`}}>
-    <div style={{position: 'relative', padding: '18px 34px', textAlign: 'center'}}>
-      <div style={{position: 'absolute', inset: -30, background: 'radial-gradient(ellipse at center, rgba(5,10,20,.62) 0%, rgba(5,10,20,.38) 45%, rgba(5,10,20,0) 72%)'}} />
-      <div style={{position: 'relative', fontFamily: 'EB Garamond', fontStyle: 'italic', fontWeight: 500, fontSize: 58, lineHeight: 1.22, color: '#fff',
-        textShadow: '0 2px 14px rgba(0,0,0,.75), 0 0 2px rgba(0,0,0,.6)'}}>{text}</div>
+  const toks = highlightTokens(text, b.highlight);
+  const fs = text.length > 64 ? 52 : text.length > 56 ? 55 : 58; // keeps <= 12 words on two lines
+  return <>
+    {/* soft dark band behind the caption: readable over busy ground (wave pavement, crowds) */}
+    <div style={{position: 'absolute', left: 0, right: 0, top: 1040, height: 440, opacity: o,
+      background: 'linear-gradient(rgba(5,10,20,0) 0%, rgba(5,10,20,.42) 30%, rgba(5,10,20,.48) 62%, rgba(5,10,20,0) 100%)'}} />
+    <div style={{position: 'absolute', left: 90, right: 140, top: 1150, display: 'flex', justifyContent: 'center', opacity: o,
+      transform: `translateY(${(1 - o) * 10}px)`}}>
+      <div style={{position: 'relative', padding: '18px 26px', textAlign: 'center'}}>
+        <div style={{position: 'absolute', inset: -30, background: 'radial-gradient(ellipse at center, rgba(5,10,20,.55) 0%, rgba(5,10,20,.32) 50%, rgba(5,10,20,0) 75%)'}} />
+        <div style={{position: 'relative', fontFamily: 'EB Garamond', fontStyle: 'italic', fontWeight: 500, fontSize: fs, lineHeight: 1.2, color: '#fff',
+          textShadow: '0 2px 12px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.75)', ...BALANCE}}>
+          {toks.map((k, i) => <React.Fragment key={i}>{i > 0 ? k.sep : ''}{k.pre}
+            {k.hl ? <span style={{color: ACCENT2, fontWeight: 600}}>{k.core}</span> : k.core}{k.post}</React.Fragment>)}
+        </div>
+      </div>
     </div>
-  </div>;
+  </>;
 };
 
 // ---------- HUD countdown ----------
@@ -138,7 +182,7 @@ function hudAt(b: Beat, h: Hud, t: number): HudState {
   const dir = Math.sign(to - from) || -1;
   const raw = from + dir * rate * (t - b.start);
   const v = dir < 0 ? Math.max(to, raw) : Math.min(to, raw);
-  return {label: h.label ?? '', sub: h.sub ?? '', v, done: v === to && t > b.start, end: h.end, dec: h.decimals ?? 3};
+  return {label: h.label ?? '', sub: h.sub ?? '', v, done: v === to && (t > b.start || from === to), end: h.end, dec: h.decimals ?? 3};
 }
 export const fmtClock = (v: number, dec = 3) => {
   v = Math.max(0, v);
@@ -146,6 +190,7 @@ export const fmtClock = (v: number, dec = 3) => {
   const whole = Math.floor(s), frac = Math.floor((s - whole) * Math.pow(10, dec));
   return `${m}:${String(whole).padStart(2, '0')}${dec > 0 ? '.' + String(frac).padStart(dec, '0') : ''}`;
 };
+const HUD_BOTTOM = 400; // y where the HUD block (label + clock + sub) ends
 const HudCountdown: React.FC<{t: number}> = ({t}) => {
   const b = beatAt(t);
   if (!b.hud) return null;
@@ -154,11 +199,16 @@ const HudCountdown: React.FC<{t: number}> = ({t}) => {
   const sh = '0 2px 14px rgba(0,0,0,.6), 0 0 3px rgba(0,0,0,.5)';
   const vis = 1 - titleOpacity(t);
   if (vis <= 0.01) return null;
+  // long end text ("SPINNING AGAIN") shrinks to stay on one line inside the 800 px column
+  const endText = st.end ?? '', endFs = Math.min(104, Math.floor(770 / Math.max(1, endText.length * 0.73)));
   return <div style={{position: 'absolute', top: 190, left: 140, right: 140, textAlign: 'center', color: '#fff', opacity: vis}}>
-    {st.label && <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 26, letterSpacing: 7, opacity: 0.85, textShadow: sh}}>{st.label}</div>}
-    <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: showEnd ? 104 : 112, lineHeight: 1.15, letterSpacing: showEnd ? 14 : 0,
+    {/* soft dark plate: keeps the HUD readable over white facades and bright sky */}
+    <div style={{position: 'absolute', left: -70, right: -70, top: -40, height: HUD_BOTTOM - 190 + 80,
+      background: 'radial-gradient(ellipse at center, rgba(5,10,20,.5) 0%, rgba(5,10,20,.34) 48%, rgba(5,10,20,0) 72%)'}} />
+    {st.label && <div style={{position: 'relative', fontFamily: 'Space Mono', fontWeight: 700, fontSize: 26, letterSpacing: 7, opacity: 0.85, textShadow: sh}}>{st.label}</div>}
+    <div style={{position: 'relative', fontFamily: 'Space Mono', fontWeight: 700, fontSize: showEnd ? endFs : 112, lineHeight: showEnd ? 129 / endFs : 1.15, letterSpacing: showEnd ? endFs * 0.13 : 0, whiteSpace: 'nowrap',
       color: showEnd ? (tl.titleCard?.color ?? '#FFC857') : '#fff', textShadow: sh}}>{showEnd ? st.end : fmtClock(st.v, st.dec)}</div>
-    {st.sub && <div style={{fontFamily: 'Space Mono', fontWeight: 700, fontSize: 25, letterSpacing: 5, opacity: 0.92, textShadow: sh}}>{st.sub}</div>}
+    {st.sub && <div style={{position: 'relative', fontFamily: 'Space Mono', fontWeight: 700, fontSize: 25, letterSpacing: 5, opacity: 0.92, textShadow: sh}}>{st.sub}</div>}
   </div>;
 };
 
@@ -194,7 +244,8 @@ const TitleCardLayer: React.FC<{t: number}> = ({t}) => {
       <div style={{textAlign: 'center', marginTop: -120}}>
         <div style={{fontFamily: 'EB Garamond', fontWeight: 600, fontSize: 104, lineHeight: 1.06, color: '#fff', letterSpacing: -1,
           textShadow: '0 4px 30px rgba(0,0,0,.45)'}}><TitleWords title={tc.title} accent={accent} color={color} /></div>
-        {tc.subtitle && <div style={{marginTop: 34, fontFamily: 'Space Mono', fontWeight: 700, fontSize: 24, letterSpacing: 6, color: 'rgba(255,255,255,.8)'}}>{tc.subtitle}</div>}
+        {tc.subtitle && <div style={{marginTop: 38, fontFamily: 'Space Mono', fontWeight: 700, fontSize: 34, lineHeight: 1.3, letterSpacing: 3, color: 'rgba(255,255,255,.88)',
+          textShadow: '0 2px 14px rgba(0,0,0,.6)', ...BALANCE}}>{tc.subtitle}</div>}
       </div>
     </AbsoluteFill>
   </AbsoluteFill>;

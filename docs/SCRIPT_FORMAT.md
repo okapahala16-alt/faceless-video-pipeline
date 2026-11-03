@@ -29,6 +29,7 @@ Everything new is optional. Leave a field out and you get the old behaviour.
 | `mode` | `"scene"` or `"sfxdemo"` | `"scene"` | `sfxdemo` = black screen naming each sound |
 | `audio` | object | none | v2 audio settings, see below |
 | `endCard` | `[line1, accent, line2]` | | legacy end card text (when there is no `titleCard`) |
+| `accentColor` | hex string | `titleCard.color`, else `#FFC857` | episode accent: editorial highlights, counter label under a HUD, amber trails and visible air |
 
 ### `titleCard`
 ```json
@@ -54,14 +55,45 @@ last `endHold` s as the end card. Frame 0 and the last frame look the same, so t
 - `duck`: how much ambience/SFX drop under voice-over (only with VO).
 - `master`: integrated loudness target (ITU-R BS.1770) and limiter ceiling in dBFS (sample peak).
 
+**Limiter cap + punch (opt-in, v2):**
+```json
+"master": {"lufs": -14, "ceiling": -1.0, "maxReduction": 3, "minLufs": -16, "lufsStep": 0.25, "truePeak": -1.0},
+"punch": {"levels": ["huge"], "softClip": 12, "duck": 10, "duckPre": 0.3, "duckHold": 0.15, "duckRelease": 1.5, "impactGain": 1.3, "mid": 0.8, "midDecay": 0.4, "midFreq": 170}
+```
+- `maxReduction`: if the limiter would cut more than this (dB), the target drops by `lufsStep` until `minLufs`.
+- `punch`: impacts whose `level` is in `levels` go to their own bus, soft-clipped `softClip` dB below their own peak
+  (harmonics that survive phone speakers); every other layer (drone, ambience, other SFX) is ducked `duck` dB from
+  `duckPre` s before the hit, held `duckHold` s, released over `duckRelease` s. Per impact override: `"punch": true/false`, `"softClip"`, `"duck"`, `"mid"`.
+- `mid`: adds a saturated mid layer (body falling from ~2x `midFreq`, crack 500 Hz-4 kHz, slam 250-1500 Hz) so hits read on phone speakers.
+- `truePeak`: lowers the ceiling until the 4x-oversampled peak is under this (dBTP).
+- Tip: put a literal non-breaking space (U+00A0) between a number and its unit in captions (`1,670\u00a0km/h`) so they never split across lines.
+
+
 ## Scenes
 | scene | file | own shots (plus every Kuta shot name as a fallback) |
 |---|---|---|
 | `kuta` | `src/World.tsx` | `orbit_wide`, `beach_low`, `crowd_push`, `kid_follow`, `kid_side`, `wave_low`, `drift_up`, `crowd_air`, `crowd_air_hold`, `fall_drop`, `aftermath`, `orbit_end` |
-| `copacabana` | `src/scenes/Copacabana.tsx` | `bay_aerial` (establishing: city, bay, Sugarloaf-like dome), `promenade_low` (wave pavement), `crowd_sand`, `skyline_from_sea`, `sugarloaf`, `avenue` |
+| `copacabana` | `src/scenes/Copacabana.tsx` | `bay_aerial` (establishing: city, bay, Sugarloaf-like dome), `promenade_low` (wave pavement), `crowd_sand`, `skyline_from_sea`, `sugarloaf`, `avenue`, `copa_crowd_level`, `tracking_east_with_crowd`, `tracking_east_close` |
 
 Both scenes share the sea, the 190 physics people and the props, so every `events` name works in both.
-Copacabana adds ~520 static background people and 150 umbrellas along the bay: they do not react to events.
+Copacabana adds ~520 background people and 150 umbrellas along the bay (instanced). They ignore the Kuta
+events, but drift east with everyone else on `freeDriftEast`; so do the cars on the Avenida.
+
+New Copacabana shots (consecutive beats with the same shot continue one camera move, they do not restart):
+
+| shot | camera |
+|---|---|
+| `copa_crowd_level` | eye level (1.6 m) in a gap of the crowd, looking north-east along the beach toward Leme. Once `freeDriftEast` runs the camera is a free body too and drifts east with the crowd (`EAST * driftAt(t)`). |
+| `tracking_east_with_crowd` | rides east with the crowd from the sea side, a little ahead, looking back at the receding (slate) beach and city |
+| `tracking_east_close` | close-up of one adult from the middle of the crowd (picked so they face the camera), floating with them; turns at half their spin |
+
+Props, umbrellas and background people within ~3 m of the camera (people ~1.6 m, and anyone between the
+camera and a close-up subject) are hidden in Copacabana, using the pure `cameraAt(frame)` pose.
+
+### Direction convention: `EAST`
+World coordinates are not rotated. The beach runs along x (-x = north-east, Leme), the sea is at -z
+(south-east), land at +z. True east is `EAST = normalize(-0.60, 0, -0.80)` (`src/sim.ts`): out to sea and a
+little toward Leme. Every "moves east" effect uses `EAST`, never +x.
 
 ## Beat fields
 
@@ -75,10 +107,11 @@ Copacabana adds ~520 static background people and 150 umbrellas along the bay: t
 | `duration` | seconds | used when the beat has no VO (`voiceover: false`, `tts: null`, or `"novo": true`) |
 | `novo` | bool | skip VO for this one beat |
 | `label` | string | legacy top chip; `""` hides it |
-| `highlight` | string[] | karaoke accent words |
+| `highlight` | string[] | accent words. Karaoke: per word. Editorial: words or phrases (`"no wind"`, `"two kilometres"`), case and punctuation ignored, drawn semibold in `accentColor` |
+| `grade` | `"normal"` or `"split"` | colour grade, default normal. `split`: everything anchored to the Earth (sand, promenade, road, buildings, hills, domes, kiosks, posts, nets, palms) turns cold slate `#5B6672`, almost no saturation, a bit darker; free things (people, props, cars, water, air) keep their colour and get amber motion trails while they drift. Sky and clouds unchanged. Changes between beats cross over 2 frames |
 | `shot` | string | camera shot name from `src/World.tsx` (`orbit_wide`, `beach_low`, `crowd_push`, `kid_follow`, `kid_side`, `wave_low`, `drift_up`, `crowd_air`, `crowd_air_hold`, `fall_drop`, `aftermath`, `orbit_end`) |
 | `events` | list | scene events, see below |
-| `counter` | object or `null` | legacy counter card `{label, from, to, unit, dec}` |
+| `counter` | object or `null` | legacy counter card `{label, from, to, unit, dec}`. In a beat with a `hud` it sits centred under the HUD, label in `accentColor` |
 | `hud` | object | countdown HUD, see below |
 | `drone` | number, object, or list | drone intensity keyframes, see below |
 | `sfx` | list | sound events, see below |
@@ -88,6 +121,15 @@ Copacabana adds ~520 static background people and 150 umbrellas along the bay: t
 Names: `gravityDrop`, `snap`, `massFall`, `kidJump`, `bigWave`, `drift`, `massJump`.
 If no beat claims an event, the legacy beat ids are used (`drop`, `snap`, `fall`, `jump`, `waves`, `drift`, `everyone`).
 If neither exists, the event never happens.
+
+Earth-stops events (no legacy fallback; without them nothing changes):
+
+| event | what |
+|---|---|
+| `earthStop` | camera holds still 0.2 s, then a 0.3 s jolt (amplitude 0.25 m); visible air starts fading in |
+| `freeDriftEast` | every free body drifts along `EAST`: `driftAt(t)` eases in over 4 s to 35.7 m/s (428.2 m/s at 12x slow motion), per-body speed +-6 % (spread soft-capped at ~15 m so the crowd stays together). Bodies lean east for 0.4 s, lift 0.3-1.2 m, spin slowly (0.2-0.6 rad/s), arms up. Stops (drift frozen) at `earthRespin` |
+| `visibleAirCoMoving` | thin amber air lines (InstancedMesh) moving east at exactly the crowd's speed, so in a tracking shot they hang still: no relative wind. Visible from `earthStop`, brightest in the beat that claims this event |
+| `earthRespin` | drift freezes; camera jolt 0.6 s, amplitude 0.5 m (more to come in phase 2) |
 
 ### `hud`
 ```json
@@ -119,4 +161,8 @@ Every entry: `{"type": ..., "at": seconds into beat, "gain": 1.0, "pan": 0.0, "s
 | `shimmer` | `dur` (3), `density` (8/s), `fLo` (2000), `fHi` (4000) | glassy pings, seeded |
 | `swell` | `dur` (1.5, clamp 0.6-3) | noise that rises then falls |
 | `file` | `file`: name in `assets/sfx/` | or put the file name directly in `type`, e.g. `"type": "boom_01.wav"` |
+| `tick` | | **v2: one click.** (legacy Kuta path: 5 clicks) |
+| `ticks` | | the old 5 clicks, 0.2 s apart |
+| `riser` | `dur`, `from`, `to` (Hz), `curve`, `tone`, `fadeOut` | slow rising tension, stops before a hit |
+| `undertow` | `dur`, `intensity`, `cutoffFrom`, `cutoffTo`, `period`, `drift` | receding-sea rumble that gets darker and further away |
 | legacy | `whoosh`, `drop`, `rise`, `tick`, `wave`, `wind`, `snap`, `thuds` | the original Kuta sounds |

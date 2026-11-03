@@ -3,7 +3,7 @@ import {useCurrentFrame} from 'remotion';
 import {useThree} from '@react-three/fiber';
 import * as THREE from 'three';
 import {FPS, beatAt, ease, lerp, clamp, mulberry32} from './timeline';
-import {PEOPLE, KID_INDEX, OBJS, objPose, frisbeePose, wave, simT, T, fr, KID} from './sim';
+import {PEOPLE, KID_INDEX, OBJS, objPose, frisbeePose, wave, simT, T, fr, KID, TE, personFree, objFree, LEAN_AXIS, EAST, FreeOffset} from './sim';
 
 // ---------- shared geometry ----------
 export const geo = {
@@ -27,7 +27,8 @@ const matCache = new Map<string, THREE.Material>();
 export const M = (c: string) => { if (!matCache.has(c)) matCache.set(c, mat(c)); return matCache.get(c)!; };
 
 // ---------- camera ----------
-export type Shot = {p0: number[]; p1: number[]; l0: number[]; l1: number[]; fov?: number};
+// fov: vertical field of view (default 50). focus: point the scene centres shadows/effects on (default origin).
+export type Shot = {p0: number[]; p1: number[]; l0: number[]; l1: number[]; fov?: number; focus?: number[]};
 const kidY = (f: number) => PEOPLE[KID_INDEX].y[f] * PEOPLE[KID_INDEX].s;
 export function shotFor(id: string, f: number): Shot {
   const ky = kidY(f);
@@ -46,23 +47,45 @@ export function shotFor(id: string, f: number): Shot {
     case 'orbit_end': default: return {p0: [18, 12, 30], p1: [-16, 20, 32], l0: [0, 0, 6], l1: [0, 0, 6]};
   }
 }
+// event-driven camera kicks (opt-in: anchors are Infinity in scripts without these events)
+export const STOP_FREEZE = 0.2; // s the camera holds still when the Earth stops, before the jolt
+export function eventShake(t: number): number {
+  let k = 0;
+  const ds = t - (TE.earthStop + STOP_FREEZE);
+  if (ds >= 0 && ds < 0.3) k += 0.25 * Math.pow(1 - ds / 0.3, 2);
+  const dr = t - TE.respin;
+  if (dr >= 0 && dr < 0.6) k += 0.5 * Math.pow(1 - dr / 0.6, 2);
+  return k;
+}
+export type CamPose = {pos: [number, number, number]; look: [number, number, number]; fov: number; focus: number[]};
+// Pure camera pose for a frame: the same numbers CameraRig applies. Use it anywhere the scene
+// needs to know where the camera is (hiding props near the lens, sky that follows the camera).
+export function cameraAt(f: number, shots: (id: string, f: number) => Shot = shotFor): CamPose {
+  const t = f / FPS;
+  const fs = t >= TE.earthStop && t < TE.earthStop + STOP_FREEZE ? fr(TE.earthStop) : f; // freeze
+  const ts = fs / FPS, b = beatAt(ts);
+  const u = ease(clamp((ts - b.start) / Math.max(0.1, b.end - b.start)));
+  const s = shots(b.shot, fs);
+  const p = s.p0.map((v, i) => lerp(v, s.p1[i], u));
+  const l = s.l0.map((v, i) => lerp(v, s.l1[i], u));
+  // impact shake
+  const dt = t - (T.fall + 0.35);
+  const shake = dt > 0 ? 0.35 * Math.exp(-dt * 3) : 0;
+  const snapPunch = t > T.snap && t < T.snap + 0.4 ? 0.12 * Math.exp(-(t - T.snap) * 8) : 0;
+  const k = shake + snapPunch;
+  const pos: [number, number, number] = [p[0] + Math.sin(f * 1.7) * k, p[1] + Math.cos(f * 2.3) * k, p[2]];
+  const ek = eventShake(t);
+  if (ek > 0) { pos[0] += Math.sin(f * 2.9 + 1) * ek; pos[1] += Math.cos(f * 3.7) * ek * 0.7; pos[2] += Math.sin(f * 2.1 + 2) * ek * 0.6; }
+  return {pos, look: [l[0], l[1], l[2]], fov: s.fov ?? 50, focus: s.focus ?? [0, 0, 0]};
+}
 export const CameraRig: React.FC<{shots?: (id: string, f: number) => Shot}> = ({shots = shotFor}) => {
   const f = useCurrentFrame();
   const {camera} = useThree();
   useLayoutEffect(() => {
-    const t = f / FPS, b = beatAt(t);
-    const u = ease(clamp((t - b.start) / Math.max(0.1, b.end - b.start)));
-    const s = shots(b.shot, f);
-    const p = s.p0.map((v, i) => lerp(v, s.p1[i], u));
-    const l = s.l0.map((v, i) => lerp(v, s.l1[i], u));
-    // impact shake
-    const dt = t - (T.fall + 0.35);
-    const shake = dt > 0 ? 0.35 * Math.exp(-dt * 3) : 0;
-    const snapPunch = t > T.snap && t < T.snap + 0.4 ? 0.12 * Math.exp(-(t - T.snap) * 8) : 0;
-    const k = shake + snapPunch;
-    camera.position.set(p[0] + Math.sin(f * 1.7) * k, p[1] + Math.cos(f * 2.3) * k, p[2]);
-    camera.lookAt(l[0], l[1], l[2]);
-    (camera as THREE.PerspectiveCamera).fov = 50;
+    const c = cameraAt(f, shots);
+    camera.position.set(c.pos[0], c.pos[1], c.pos[2]);
+    camera.lookAt(c.look[0], c.look[1], c.look[2]);
+    (camera as THREE.PerspectiveCamera).fov = c.fov;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
   }, [f, camera, shots]);
   return null;
@@ -129,13 +152,13 @@ const Sand: React.FC = () => {
   return <mesh geometry={g} receiveShadow material={useMemo(() => new THREE.MeshStandardMaterial({vertexColors: true, roughness: 1, flatShading: true}), [])} />;
 };
 
-export const Palm: React.FC<{x: number; z: number; h: number; lean: number}> = ({x, z, h, lean}) => {
+export const Palm: React.FC<{x: number; z: number; h: number; lean: number; mat?: (c: string) => THREE.Material}> = ({x, z, h, lean, mat = M}) => {
   const f = useCurrentFrame();
   const sway = Math.sin(f / 22 + x) * 0.04;
   return <group position={[x, 0.4, z]} rotation={[0, 0, lean + sway]}>
-    {Array.from({length: 6}, (_, i) => <mesh key={i} geometry={geo.trunk} material={M(i % 2 ? '#8a6a45' : '#7a5c3a')} position={[i * 0.06 * Math.sign(lean || 1), (i + 0.5) * h / 6, 0]} scale={[1 - i * 0.07, h / 6, 1 - i * 0.07]} castShadow />)}
+    {Array.from({length: 6}, (_, i) => <mesh key={i} geometry={geo.trunk} material={mat(i % 2 ? '#8a6a45' : '#7a5c3a')} position={[i * 0.06 * Math.sign(lean || 1), (i + 0.5) * h / 6, 0]} scale={[1 - i * 0.07, h / 6, 1 - i * 0.07]} castShadow />)}
     <group position={[0.36 * Math.sign(lean || 1), h, 0]}>
-      {Array.from({length: 7}, (_, i) => <mesh key={i} geometry={geo.leaf} material={M(i % 2 ? '#2f9e44' : '#37b24d')} rotation={[Math.PI / 2.6, (i / 7) * Math.PI * 2, 0]} position={[Math.cos((i / 7) * Math.PI * 2) * 0.9, -0.2, Math.sin((i / 7) * Math.PI * 2) * 0.9]} scale={[1, 1, 0.35]} castShadow />)}
+      {Array.from({length: 7}, (_, i) => <mesh key={i} geometry={geo.leaf} material={mat(i % 2 ? '#2f9e44' : '#37b24d')} rotation={[Math.PI / 2.6, (i / 7) * Math.PI * 2, 0]} position={[Math.cos((i / 7) * Math.PI * 2) * 0.9, -0.2, Math.sin((i / 7) * Math.PI * 2) * 0.9]} scale={[1, 1, 0.35]} castShadow />)}
     </group>
   </group>;
 };
@@ -164,14 +187,30 @@ const Shops: React.FC = () => {
 };
 
 // ---------- people ----------
-export const PersonMesh: React.FC<{i: number}> = ({i}) => {
+// orientation of a free-floating body: base yaw + slow spin, small tumble, lean toward east
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _ax = new THREE.Vector3(), _e = new THREE.Euler();
+export function freeQuat(yaw0: number, fo: FreeOffset, extra?: [number, number, number]): [number, number, number, number] {
+  _q.setFromAxisAngle(_ax.set(LEAN_AXIS.x, 0, LEAN_AXIS.z), fo.lean);
+  _q.multiply(_q2.setFromAxisAngle(_ax.set(EAST.x, 0, EAST.z), fo.tumble));
+  _q.multiply(_q2.setFromAxisAngle(_ax.set(0, 1, 0), yaw0 + fo.yaw));
+  if (extra) _q.multiply(_q2.setFromEuler(_e.set(extra[0], extra[1], extra[2])));
+  return [_q.x, _q.y, _q.z, _q.w];
+}
+
+// ---------- people ----------
+// hide: optional per-scene cull (e.g. bodies right in front of the lens). Kuta passes nothing.
+export const PersonMesh: React.FC<{i: number; hide?: (x: number, z: number, r?: number) => boolean}> = ({i, hide}) => {
   const f = useCurrentFrame();
   const p = PEOPLE[i];
   const y = p.y[f], tilt = p.tilt[f];
   const air = y > 0.05;
   const idle = Math.sin(f / 9 + i) * 0.03;
-  const arms = air ? 1 : 0;
-  return <group position={[p.x, 0.02 + p.z * 0.02 + y, p.z]} rotation={[Math.cos(p.tiltDir) * tilt, p.rot, Math.sin(p.tiltDir) * tilt]} scale={p.s}>
+  const fo = personFree(i, f); // null unless the script has freeDriftEast
+  const arms = fo ? fo.arms : air ? 1 : 0;
+  const pos: [number, number, number] = fo ? [p.x + fo.dx, 0.02 + p.z * 0.02 + y + fo.dy, p.z + fo.dz] : [p.x, 0.02 + p.z * 0.02 + y, p.z];
+  if (hide && hide(pos[0], pos[2], 1.6)) return null;
+  const orient = fo ? {quaternion: freeQuat(p.rot, fo)} : {rotation: [Math.cos(p.tiltDir) * tilt, p.rot, Math.sin(p.tiltDir) * tilt] as [number, number, number]};
+  return <group key={fo ? 'free' : 'rest'} position={pos} {...orient} scale={p.s}>
     <mesh geometry={geo.shorts} material={M('#33415c')} position={[0, 0.3, 0]} castShadow />
     <mesh geometry={geo.body} material={M(p.shirt)} position={[0, 0.78 + idle, 0]} castShadow />
     <group position={[0, 1.38 + idle, 0]}>
@@ -185,9 +224,27 @@ export const PersonMesh: React.FC<{i: number}> = ({i}) => {
   </group>;
 };
 
-export const Objects: React.FC = () => {
+// world position (pole foot / centre) and orientation of a loose prop; free drift is added when active
+export function objWorld(i: number, f: number) {
+  const o = OBJS[i], q = objPose(o, f), fo = objFree(i, f);
+  const baseY = o.kind === 'umbrella' ? q.y + 0.3 : o.kind === 'ball' ? q.y + 0.5 + o.z * 0.02 : q.y + 0.25 + o.z * 0.02;
+  if (!fo) return {x: q.x, y: baseY, z: o.z, q, fo};
+  return {x: q.x + fo.dx, y: baseY + fo.dy * (o.kind === 'umbrella' ? 0.8 : 1), z: o.z + fo.dz, q, fo};
+}
+export const Objects: React.FC<{hide?: (x: number, z: number, r?: number) => boolean}> = ({hide}) => {
   const f = useCurrentFrame();
   return <group>{OBJS.map((o, i) => {
+    if (hide || objFree(i, f)) { // opt-in path (Copacabana): drift + near-camera cull
+      const w = objWorld(i, f), fo = w.fo, q = w.q;
+      if (hide && hide(w.x, w.z, o.kind === 'umbrella' ? 3.2 : 2.2)) return null; // umbrella canopies: ~3 m clear of the lens
+      const extra: [number, number, number] = o.kind === 'umbrella' ? [q.rx, 0, q.rz + 0.08] : o.kind === 'ball' ? [q.rx, 0, q.rz] : [q.rx, o.spin, q.rz];
+      const orient = fo ? {quaternion: freeQuat(0, {...fo, yaw: fo.yaw * (o.kind === 'umbrella' ? 0.5 : 1.6)}, extra)} : {rotation: extra};
+      if (o.kind === 'umbrella') return <group key={i} position={[w.x, w.y, w.z]} {...orient}>
+        <mesh geometry={geo.pole} material={M('#eeeeee')} position={[0, 1.1, 0]} castShadow />
+        <mesh geometry={geo.canopy} material={M(o.color)} position={[0, 2.25, 0]} castShadow />
+      </group>;
+      return <mesh key={i} geometry={o.kind === 'ball' ? geo.ball : geo.towel} material={M(o.color)} position={[w.x, w.y, w.z]} {...orient} castShadow />;
+    }
     const q = objPose(o, f);
     if (o.kind === 'umbrella') return <group key={i} position={[q.x, q.y + 0.3, o.z]} rotation={[q.rx, 0, q.rz + 0.08]}>
       <mesh geometry={geo.pole} material={M('#eeeeee')} position={[0, 1.1, 0]} castShadow />

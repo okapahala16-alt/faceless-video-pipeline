@@ -188,7 +188,8 @@ def is_legacy(sc):
     They keep going through main() above, untouched, so they render byte-identical audio."""
     return "audio" not in sc and sc.get("voiceover", True) is not False and sc.get("tts", "unset") is not None
 
-NEW_SFX = {"impact", "sweep_up", "sweep_down", "noise_wall", "shimmer", "swell", "silence_cut", "file"}
+NEW_SFX = {"impact", "sweep_up", "sweep_down", "noise_wall", "shimmer", "swell", "silence_cut", "file",
+           "tick", "ticks", "riser", "undertow"}
 LEGACY_SFX = {"whoosh", "drop", "rise", "tick", "wave", "wind", "snap", "thuds"}
 AUDIO_EXT = (".wav", ".mp3", ".flac", ".ogg", ".aif", ".aiff")
 
@@ -223,6 +224,18 @@ def _render_sfx(ev, seed, idx):
         return fx.shimmer(ev.get("dur", 3.0), ev.get("density", 8.0), ev.get("fLo", 2000), ev.get("fHi", 4000), rng), "shimmer"
     if kind == "swell":
         return fx.swell(ev.get("dur", 1.5), rng), "swell"
+    if kind == "tick":  # v2: one click (the legacy 5-click pattern is "ticks")
+        return fx.tick(rng), "tick"
+    if kind == "ticks":
+        return _legacy_sfx_stereo("tick"), "ticks (5)"
+    if kind == "riser":
+        d = ev.get("dur", 6.0)
+        return fx.riser(d, ev.get("from", 150.0), ev.get("to", 1800.0), ev.get("curve", 2.0), ev.get("tone", 0.35),
+                        ev.get("fadeOut", 0.15), rng), f"riser {d:g}s"
+    if kind == "undertow":
+        d = ev.get("dur", 9.0)
+        return fx.undertow(d, ev.get("intensity", 0.6), ev.get("cutoffFrom", 900.0), ev.get("cutoffTo", 160.0),
+                           ev.get("period", 2.4), ev.get("drift", 0.5), rng), f"undertow {d:g}s"
     if kind in LEGACY_SFX:
         return _legacy_sfx_stereo(kind), kind
     raise SystemExit(f"unknown sfx type '{kind}'. Synth types: {sorted(NEW_SFX | LEGACY_SFX)}, or a file name in assets/sfx/")
@@ -283,8 +296,13 @@ def main_v2(sc, public_dir, export_wav=None):
     amb, amb_src = fx.ambience_layer(n, A.get("ambience", "auto"), seed)
     amb *= float(A.get("ambienceGain", 1.0))
 
+    # ---- opt-in punch treatment for big impacts (audio.punch): soft-clip + bed pre-duck
+    P = A.get("punch") if isinstance(A.get("punch"), dict) else None
+    punch_levels = set(P.get("levels", ["huge"])) if P else set()
+    punch_hits = []
+
     # ---- sfx events (+ silence cuts)
-    clips = []; cuts = []
+    clips = []; cuts = []; on_imp_bus = []
     idx = 0
     for b in beats:
         for ev in b.get("sfx", []):
@@ -298,11 +316,22 @@ def main_v2(sc, public_dir, export_wav=None):
             clip, label = _render_sfx(ev, seed, idx)
             gl, gr = fx.pan_gains(ev.get("pan", 0.0))
             clip = clip * float(ev.get("gain", 1.0)) * np.array([[gl], [gr]])
+            is_punch = bool(P) and ev.get("type") == "impact" and ev.get("punch", ev.get("level", "medium") in punch_levels)
+            if is_punch:  # per-event "mid" / "softClip" / "duck" override the audio.punch defaults
+                mid = float(ev.get("mid", P.get("mid", 0.0)))
+                if mid > 0:  # phone-band layer, scaled to the impact's own peak, before the saturation
+                    ml = fx.impact_mid(float(ev.get("midDecay", P.get("midDecay", 0.3))), float(ev.get("midFreq", P.get("midFreq", 170.0))),
+                                       fx.rng_for(ev.get("seed", seed), "mid", idx))
+                    m = min(ml.shape[1], clip.shape[1])
+                    clip = clip.copy(); clip[:, :m] += ml[:, :m] * mid * np.abs(clip).max()
+                clip = fx.soft_clip(clip, float(ev.get("softClip", P.get("softClip", 0.0))))
+                punch_hits.append((at, float(ev.get("duck", P.get("duck", 0.0)))))
+            on_imp_bus.append(is_punch)
             clips.append((int(at * fx.SR), clip))
             events.append({"name": label, "start": round(at, 3), "end": round(at + clip.shape[1] / fx.SR, 3)})
-    fxbus = np.zeros((2, n))
+    fxbus = np.zeros((2, n)); impbus = np.zeros((2, n)) if P else None
     tt = np.arange(n) / fx.SR
-    for s0, clip in clips:
+    for ci, (s0, clip) in enumerate(clips):
         m = min(clip.shape[1], n - s0)
         if m <= 0: continue
         c = clip[:, :m].copy()
@@ -310,7 +339,8 @@ def main_v2(sc, public_dir, export_wav=None):
             if s0 / fx.SR < cu["t"] < (s0 + m) / fx.SR:
                 lt = tt[s0:s0 + m]
                 c *= 1 - fx.smoothstep(cu["t"], cu["t"] + cu["len"], lt)
-        fxbus[:, s0:s0 + m] += c
+        if P and on_imp_bus[ci]: impbus[:, s0:s0 + m] += c
+        else: fxbus[:, s0:s0 + m] += c
     amb_gate = np.ones(n)
     for cu in cuts:
         down = 1 - fx.smoothstep(cu["t"], cu["t"] + cu["len"], tt)
@@ -335,9 +365,24 @@ def main_v2(sc, public_dir, export_wav=None):
         amb *= duck; fxbus *= duck; drone *= 1 - 0.3 * np.clip(env, 0, 1)
         sf.write(os.path.join(public_dir, "audio", "vo.wav"), vo2[0].astype(np.float32), fx.SR)
 
+    duck_hits = [(h, d) for h, d in punch_hits if d > 0]
+    if duck_hits:
+        # bed = drone, ambience and every sfx that is not a punch impact; dips just before each hit
+        pre, hold, rel = float(P.get("duckPre", 0.25)), float(P.get("duckHold", 0.12)), float(P.get("duckRelease", 0.8))
+        dk = fx.duck_curve(n, duck_hits, pre=pre, hold=hold, release=rel)
+        drone = drone * dk; amb = amb * dk; fxbus = fxbus * dk
+        for h, d in duck_hits: events.append({"name": f"pre-duck -{d:g} dB", "start": round(h - pre, 3), "end": round(h + hold + rel, 3)})
     mix = vo2 + drone * float(A.get("droneGain", 1.0)) + amb * 0.5 + fxbus * float(A.get("sfxGain", 0.8))
+    if P: mix = mix + impbus * float(A.get("sfxGain", 0.8)) * float(P.get("impactGain", 1.0))
     mcfg = A.get("master", {})
-    mix, out_lufs, gr, peak = fx.master(mix, float(mcfg.get("lufs", -14.0)), float(mcfg.get("ceiling", -1.0)))
+    gr_curve = None
+    if "maxReduction" in mcfg:  # opt-in: lower the loudness target (down to minLufs) to cap limiter reduction
+        mix, out_lufs, gr, peak, gr_curve, tgt = fx.master_capped(mix, float(mcfg.get("lufs", -14.0)), float(mcfg.get("ceiling", -1.0)),
+                                                                  float(mcfg["maxReduction"]), float(mcfg.get("minLufs", mcfg.get("lufs", -14.0))),
+                                                                  float(mcfg.get("lufsStep", 0.25)),
+                                                                  float(mcfg["truePeak"]) if "truePeak" in mcfg else None)
+    else:
+        mix, out_lufs, gr, peak = fx.master(mix, float(mcfg.get("lufs", -14.0)), float(mcfg.get("ceiling", -1.0)))
     sf.write(os.path.join(public_dir, "audio", "mix.wav"), mix.T.astype(np.float32), fx.SR)
     if export_wav:
         os.makedirs(os.path.dirname(os.path.abspath(export_wav)), exist_ok=True)
@@ -348,9 +393,17 @@ def main_v2(sc, public_dir, export_wav=None):
           "titleCard": sc.get("titleCard"), "ui": sc.get("ui", {}), "audioEvents": sorted(events, key=lambda e: e["start"]),
           "beats": beats}
     if "endCard" in sc: tl["endCard"] = sc["endCard"]
+    if "accentColor" in sc: tl["accentColor"] = sc["accentColor"]
     json.dump(tl, open(os.path.join(public_dir, "timeline.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     print(f"total {total:.2f}s, {len(beats)} beats, voiceover={voiceover}, ambience={amb_src}")
     print(f"master: {out_lufs:.1f} LUFS, peak {peak:.1f} dBFS, limiter max reduction {gr:.1f} dB, stereo 48 kHz")
+    if gr_curve is not None:
+        print(f"  true peak (4x oversampled): {fx.true_peak_db(mix):.2f} dBTP")
+        if tgt < float(mcfg.get("lufs", -14.0)) - 1e-6:
+            print(f"  target lowered to {tgt:.2f} LUFS to keep the limiter under {float(mcfg['maxReduction']):g} dB" +
+                  ("" if gr <= float(mcfg["maxReduction"]) + 1e-6 else f" (NOT reached at minLufs: {gr:.1f} dB)"))
+        imp_t = sorted({e["start"] for e in events if e["name"].startswith("impact")})
+        print("  limiter at impacts: " + ", ".join(f"{t:.2f}s {gr_curve[int(t * fx.SR):int((t + 0.25) * fx.SR)].max():.1f} dB" for t in imp_t))
     for b in beats: print(f"  {b['start']:6.2f}-{b['end']:6.2f} {b['id']:12s}" + (f" vo {b['voDur']:.2f}s" if b['voDur'] else ""))
 
 if __name__ == "__main__":

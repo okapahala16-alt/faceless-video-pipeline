@@ -303,8 +303,8 @@ def lufs(x):
     return float(-0.691 + 10 * np.log10(z2.mean())) if len(z2) else -70.0
 
 
-def limiter(x, ceiling_db=-1.0, lookahead=0.005, release=0.15):
-    """Linked-stereo lookahead peak limiter. Returns (y, max gain reduction dB)."""
+def _limiter_gain(x, ceiling_db=-1.0, lookahead=0.005, release=0.15):
+    """Per-sample gain curve of the linked-stereo lookahead peak limiter."""
     ceil = 10 ** (ceiling_db / 20)
     blk = 48  # 1 ms control blocks
     nb = int(np.ceil(x.shape[1] / blk))
@@ -319,6 +319,12 @@ def limiter(x, ceiling_db=-1.0, lookahead=0.005, release=0.15):
     gs = np.repeat(g, blk)[: x.shape[1]]
     gs = uniform_filter1d(gs, size=la * blk // 2 * 2 + 1, mode="nearest")
     gs = np.minimum(gs, np.repeat(req, blk)[: x.shape[1]])
+    return gs, ceil
+
+
+def limiter(x, ceiling_db=-1.0, lookahead=0.005, release=0.15):
+    """Linked-stereo lookahead peak limiter. Returns (y, max gain reduction dB)."""
+    gs, ceil = _limiter_gain(x, ceiling_db, lookahead, release)
     y = np.clip(x * gs, -ceil, ceil)
     return y, float(-20 * np.log10(max(gs.min(), 1e-9)))
 
@@ -338,3 +344,156 @@ def master(x, target_lufs=-14.0, ceiling_db=-1.0):
         gain_db += err
     x = y
     return x, lufs(x), max(0.0, unlimited_peak - ceiling_db), float(20 * np.log10(np.abs(x).max() + 1e-12))
+
+
+def master_capped(x, target_lufs=-14.0, ceiling_db=-1.0, max_reduction=3.0, min_lufs=-16.0, step=0.25, true_peak=None):
+    """Opt-in master (audio.master.maxReduction): like master(), but if the limiter would have to pull
+    more than max_reduction dB anywhere, the loudness target is lowered in `step` dB steps down to
+    min_lufs. Returns (y, lufs, true max limiter reduction dB, peak dBFS, gain-reduction curve dB, chosen target)."""
+    l0 = lufs(x)
+    if l0 <= -69:
+        return x, l0, 0.0, float(20 * np.log10(np.abs(x).max() + 1e-12)), np.zeros(x.shape[1]), target_lufs
+    targets = [float(v) for v in np.arange(target_lufs, min_lufs - 1e-6, -abs(step))] or [float(target_lufs)]
+    if min_lufs < target_lufs and abs(targets[-1] - min_lufs) > 1e-6: targets.append(float(min_lufs))
+    def render(tgt, gain_db, ceil_db):
+        for _ in range(10):  # raise the gain until the limited result lands on target
+            gs, ceil = _limiter_gain(x * 10 ** (gain_db / 20), ceil_db)
+            y = np.clip(x * 10 ** (gain_db / 20) * gs, -ceil, ceil)
+            err = tgt - lufs(y)
+            if abs(err) < 0.05: break
+            gain_db += err
+        return y, gs, gain_db
+    offset = 0.0  # gain above the plain loudness match that the limiter needs, carried between targets
+    for tgt in targets:
+        ceil_db = ceiling_db
+        y, gs, gain_db = render(tgt, tgt - l0 + offset, ceil_db)
+        if true_peak is not None:  # opt-in: lower the sample ceiling until the oversampled peak is <= true_peak dBTP
+            for _ in range(6):
+                over = true_peak_db(y) - true_peak
+                if over <= 0: break
+                ceil_db -= over + 0.05
+                y, gs, gain_db = render(tgt, gain_db, ceil_db)
+        offset = gain_db - (tgt - l0)
+        red = float(-20 * np.log10(max(gs.min(), 1e-9)))
+        if red <= max_reduction + 1e-6: break
+    gr_db = -20 * np.log10(np.maximum(gs, 1e-9))
+    return y, lufs(y), red, float(20 * np.log10(np.abs(y).max() + 1e-12)), gr_db, float(tgt)
+
+
+# ---------------------------------------------------------------- opt-in punch tools
+def soft_clip(clip, clip_db=6.0):
+    """Saturate a clip from clip_db below its own peak: small signals pass unchanged, peaks round off
+    (odd harmonics, so a 42 Hz boom also speaks at 126/210 Hz on phone speakers)."""
+    if not clip_db or clip_db <= 0: return clip
+    pk = np.abs(clip).max()
+    if pk <= 0: return clip
+    c = pk * 10 ** (-clip_db / 20)
+    return c * np.tanh(clip / c)
+
+
+def duck_curve(n, hits, depth_db=6.0, pre=0.25, hold=0.12, release=0.8):
+    """Gain curve (n,) that dips the bed around each hit: ramps down over `pre` seconds before the hit,
+    holds `hold`, recovers over `release`. hits: times in s, or (time, depth dB) pairs."""
+    t = np.arange(n) / SR
+    g = np.ones(n)
+    for h in hits:
+        h, d = (h if isinstance(h, (tuple, list)) else (h, depth_db))
+        floor = 10 ** (-abs(d) / 20)
+        w = smoothstep(h - pre, h - 0.005, t) * (1 - smoothstep(h + hold, h + hold + release, t))
+        g = np.minimum(g, 1 - (1 - floor) * w)
+    return g
+
+
+def tick(rng=None):
+    """One clock click (the v2 "tick"). Same tone as one click of the legacy 5-click "tick"."""
+    n = int(SR * 0.04); t = np.arange(n) / SR
+    c = 0.35 * np.sin(2 * np.pi * 1800 * t) * np.exp(-t * 90) * 0.7
+    return np.vstack([c, c])
+
+
+def _band_bank(x, centers, q=1.2):
+    """Bandpassed copies of x at log-spaced centre frequencies (rows)."""
+    out = []
+    for fc in centers:
+        lo, hi = fc / (1 + 1 / (2 * q)), fc * (1 + 1 / (2 * q))
+        out.append(filt(x, "bandpass", [max(20, lo), min(SR / 2 * 0.95, hi)], 2))
+    return np.array(out)
+
+
+def _sweep_bank(bank, centers, f_curve):
+    """Crossfade between bank rows so the passband follows f_curve (Hz per sample)."""
+    lc = np.log(centers); lf = np.log(np.clip(f_curve, centers[0], centers[-1]))
+    pos = np.interp(lf, lc, np.arange(len(centers)))
+    i0 = np.floor(pos).astype(int); i1 = np.minimum(i0 + 1, len(centers) - 1); fr = pos - i0
+    idx = np.arange(bank.shape[1])
+    return bank[i0, idx] * (1 - fr) + bank[i1, idx] * fr
+
+
+def riser(dur=6.0, f_from=150.0, f_to=1800.0, curve=2.0, tone=0.35, fade_out=0.15, rng=None):
+    """Slow tension riser: band of noise whose centre glides f_from -> f_to (exponential), plus a quiet
+    tone a fifth apart, level rising as u**curve. Ends with a short fade so the impact lands in a gap."""
+    n = int(dur * SR)
+    u = np.linspace(0, 1, n)
+    f = f_from * (f_to / f_from) ** u
+    centers = np.geomspace(max(40, min(f_from, f_to) * 0.7), min(16000, max(f_from, f_to) * 1.4), 14)
+    env = u ** curve * fade_env(n, 0.0, fade_out)
+    out = np.zeros((2, n))
+    ph = 2 * np.pi * np.cumsum(f * 0.5) / SR
+    ton = (np.sin(ph) + 0.5 * np.sin(1.5 * ph + 0.7)) * 0.5
+    for ch in range(2):
+        band = _sweep_bank(_band_bank(colored_noise(n, rng, "pink"), centers), centers, f)
+        band /= np.std(band) + 1e-9
+        out[ch] = (band * 0.10 + ton * tone * 0.12) * env
+    return out
+
+
+def undertow(dur=9.0, intensity=0.6, cutoff_from=900.0, cutoff_to=160.0, period=2.4, drift=0.5, rng=None):
+    """Receding sea: low surf rumble whose low-pass closes (cutoff_from -> cutoff_to) so the water
+    sounds further away, plus a hiss of water drawn back over sand every `period` s that also
+    thins out. Pans slowly by `drift` (sea moving east = to the right for positive drift)."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR; u = t / max(dur, 1e-3)
+    fc = cutoff_from * (cutoff_to / cutoff_from) ** u
+    centers = np.geomspace(min(cutoff_from, cutoff_to) * 0.7, max(cutoff_from, cutoff_to) * 1.3, 12)
+    ph = (t / period) % 1.0
+    draw = np.sin(np.pi * ph ** 0.6) ** 2 * (1 - 0.6 * u)  # each draw-back swells then fades
+    swell_mod = 0.7 + 0.3 * np.sin(2 * np.pi * t / (period * 2.1) + 0.8)
+    mono = []
+    for ch in range(2):
+        br = colored_noise(n, rng, "brown")
+        # low-pass that closes over time, built as a crossfade between fixed low-passes
+        bank = np.array([filt(br, "lowpass", c, 2) for c in centers])
+        rum = _sweep_bank(bank, centers, fc)
+        rum /= np.std(rum) + 1e-9
+        hiss = filt(colored_noise(n, rng, "pink"), "bandpass", [1200, 6500], 2)
+        hiss /= np.std(hiss) + 1e-9
+        mono.append(rum * 0.40 * swell_mod * (0.6 + 0.4 * draw) + hiss * 0.07 * draw * (1 - 0.5 * u))
+    p = drift * (2 * u - 1) * 0.5
+    a = (np.clip(p, -1, 1) + 1) * np.pi / 4
+    out = np.vstack([mono[0] * np.cos(a) * np.sqrt(2), mono[1] * np.sin(a) * np.sqrt(2)])
+    return out * fade_env(n, 1.2, 1.0) * float(np.clip(intensity, 0, 1)) ** 1.1
+
+
+def impact_mid(decay=0.3, f_body=170.0, rng=None):
+    """Opt-in mid layer for an impact (audio.punch.mid): what a phone speaker can play.
+    A saturated body thump gliding ~2x f_body -> f_body (rich harmonics 200 Hz-2 kHz), a short
+    crack of band-limited noise (500 Hz-4 kHz) and a slam tail (250-1500 Hz). Peak about 1.0."""
+    n = int((decay * 4 + 0.05) * SR)
+    t = np.arange(n) / SR
+    f = f_body * (1 + 1.0 * np.exp(-t / 0.05))
+    body = np.tanh(3.0 * np.sin(2 * np.pi * np.cumsum(f) / SR)) * np.exp(-t / decay)
+    body *= smoothstep(0, 1, np.clip(t / 0.002, 0, 1))
+    out = np.zeros((2, n))
+    for ch in range(2):
+        w = colored_noise(n, rng, "white")
+        crack = filt(w, "bandpass", [500, 4000], 2) * np.exp(-t / 0.035)
+        slam = filt(w, "bandpass", [250, 1500], 2) * np.exp(-t / (decay * 0.7))
+        out[ch] = body * 0.6 + crack * 0.45 + slam * 0.35
+    return out / (np.abs(out).max() + 1e-9)
+
+
+def true_peak_db(x, os_factor=4):
+    """Oversampled (inter-sample) peak in dBFS, close to dBTP (ITU-R BS.1770 uses 4x)."""
+    from scipy.signal import resample_poly
+    y = resample_poly(x, os_factor, 1, axis=-1)
+    return float(20 * np.log10(np.abs(y).max() + 1e-12))

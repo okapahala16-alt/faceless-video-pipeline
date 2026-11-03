@@ -7,14 +7,17 @@ export type Hud = {label?: string; from: number | 'continue'; to?: number; rate?
 export type SceneEvent = string | {name: string; at?: number};
 export type Beat = {id: string; text: string; label: string; highlight: string[]; shot: string; counter: Counter;
   start: number; end: number; voStart: number; voDur: number; words: Word[];
-  caption?: string; captionStyle?: CaptionStyle; hud?: Hud | null; events?: SceneEvent[]};
+  caption?: string; captionStyle?: CaptionStyle; hud?: Hud | null; events?: SceneEvent[];
+  // colour grade per beat: 'split' = anchored (Earth-fixed) things go slate, free things keep colour
+  grade?: GradeName | null};
+export type GradeName = 'normal' | 'split';
 export type TitleCard = {title: string; accent?: string | string[]; subtitle?: string; hold?: number; fadeOut?: number;
   endHold?: number; backdrop?: number; loopBackdrop?: number; color?: string};
 export type UiFlags = {topChip?: boolean; counter?: boolean; gravityMeter?: boolean; vignette?: boolean; snapFlash?: boolean};
 export type AudioEvent = {name: string; start: number; end: number};
 export const tl = raw as unknown as {title: string; duration: number; locale?: string; endCard?: string[]; beats: Beat[];
   mode?: 'scene' | 'sfxdemo'; scene?: string; voiceover?: boolean; captionStyle?: CaptionStyle; titleCard?: TitleCard | null; ui?: UiFlags;
-  audioEvents?: AudioEvent[]};
+  audioEvents?: AudioEvent[]; accentColor?: string};
 export const FPS = 30;
 export const beatById = (id: string) => tl.beats.find((b) => b.id === id);
 export const beatAt = (t: number) => tl.beats.find((b) => t >= b.start && t < b.end) ?? (t < tl.beats[0].start ? tl.beats[0] : tl.beats[tl.beats.length - 1]);
